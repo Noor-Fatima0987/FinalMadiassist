@@ -2,6 +2,11 @@ import React, { createContext, useState } from "react";
 
 // Context create
 export const UserContext = createContext();
+export const roleFields = {
+  patient: ["fullName", "userName", "email", "phone", "age", "history"],
+  doctor: ["fullName", "email", "phone", "specialization", "qualification"],
+};
+
 
 // Provider component
 export const UserProvider = ({ children }) => {
