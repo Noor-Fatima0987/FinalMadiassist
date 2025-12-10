@@ -50,7 +50,7 @@ function Navigation () {
   return (
     <NavigationContainer>
       <Stack.Navigator
-       screenOptions={{ headerBackTitle: '', headerTintColor: '#180991ff', }}
+       screenOptions={{ headerBackTitle: 'back', headerTintColor: '#180991ff', }}
       >
         <Stack.Screen name='Home' component={HomeScreen} 
           options={{ headerShown: false, }}
