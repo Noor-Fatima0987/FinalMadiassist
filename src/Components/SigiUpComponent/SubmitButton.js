@@ -22,3 +22,4 @@ const styles = StyleSheet.create({
   },
   buttonText: { color: "white", fontSize: platformFont(moderateScale(18)), fontWeight: "bold" },
 });
+

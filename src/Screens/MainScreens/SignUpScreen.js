@@ -14,6 +14,7 @@ export default function SignUpScreen({ navigation }) {
   const [fullName, setFullName] = useState("");
   const [userName, setUserName] = useState("");
   const [gender, setGender] = useState("");
+  const [email, setEmail] = useState("");
   const [role, setRole] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -35,6 +36,13 @@ export default function SignUpScreen({ navigation }) {
     const newErrors = {};
 
     if (!fullName.trim()) newErrors.fullName = "Full name is required";
+
+    if (!email.trim()) newErrors.email = "Email is required";
+    else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) newErrors.email = "Invalid email format";
+    }
+
     if (!contactNumber.trim()) newErrors.contactNumber = "Contact number is required";
     else if (contactNumber.length !== 11) newErrors.contactNumber = "Contact number must be 11 digits";
 
@@ -53,38 +61,66 @@ export default function SignUpScreen({ navigation }) {
 
     setErrors(newErrors);
 
+    // if (Object.keys(newErrors).length === 0) {
+    //   const userData = { fullName, userName, gender, role, cnic, contactNumber, address, password, specialization, licenseNo, age, medicalHistory };
+    //   saveUser(userData);
+    //   if (role === "doctor") navigation.navigate("Main Doctor");
+    //   else navigation.navigate("Main Patient");
+    // }
     if (Object.keys(newErrors).length === 0) {
-      const userData = { fullName, userName, gender, role, cnic, contactNumber, address, password, specialization, licenseNo, age, medicalHistory };
+       let userData = {
+         fullName,
+         userName,
+         gender,
+         email,
+         role,
+         cnic,
+         contactNumber,
+         address,
+         password,
+       };
+      if (role === "doctor") {
+       userData.specialization = specialization;
+       userData.licenseNo = licenseNo;
+      } 
+      else if (role === "patient") {
+        userData.age = age;
+        userData.medicalHistory = medicalHistory;
+      }
+
       saveUser(userData);
+
       if (role === "doctor") navigation.navigate("Main Doctor");
       else navigation.navigate("Main Patient");
-    }
+   }
+
   };
 
   // Build form fields dynamically
   let formFields = [
-    { key: "fullName", label: "Full Name", value: fullName, onChange: setFullName, placeholder: "Enter your full name", required: true },
-    { key: "userName", label: "Username", value: userName, onChange: setUserName, placeholder: "Enter your username" },
-    { key: "contactNumber", label: "Contact Number", value: contactNumber, onChange: setContactNumber, placeholder: "Enter your contact number", required: true, keyboardType: "numeric" },
-    { key: "gender", label: "Gender", value: gender, onChange: setGender, placeholder: "Enter your gender" },
-    { key: "role", label: "Select Role", value: role, onChange: setRole, required: true, type: "role" },
-    { key: "cnic", label: "CNIC", value: cnic, onChange: setCnic, placeholder: "Enter your CNIC (without dashes)", required: true, keyboardType: "numeric" },
-    { key: "address", label: "Address", value: address, onChange: setAddress, placeholder: "Enter your address", required: true, multiline: true },
-    { key: "password", label: "Password", value: password, onChange: setPassword, placeholder: "Enter your password", required: true, secureTextEntry: true },
-    { key: "confirmPassword", label: "Confirm Password", value: confirmPassword, onChange: setConfirmPassword, placeholder: "Re-enter your password", required: true, secureTextEntry: true },
+    { id: "fullName", label: "Full Name", value: fullName, onChange: setFullName, placeholder: "Enter your full name", required: true },
+    { id: "userName", label: "Username", value: userName, onChange: setUserName, placeholder: "Enter your username" },
+    { id: "email", label: "Email", value: email, onChange: setEmail, placeholder: "Enter your email", required: true, keyboardType: "email-address" },
+    { id: "contactNumber", label: "Contact Number", value: contactNumber, onChange: setContactNumber, placeholder: "Enter your contact number", required: true, keyboardType: "numeric" },
+    { id: "gender", label: "Gender", value: gender, onChange: setGender, placeholder: "Enter your gender" },
+    { id: "role", label: "Select Role", value: role, onChange: setRole, required: true, type: "role" },
+    { id: "cnic", label: "CNIC", value: cnic, onChange: setCnic, placeholder: "Enter your CNIC (without dashes)", required: true, keyboardType: "numeric" },
+    { id: "address", label: "Address", value: address, onChange: setAddress, placeholder: "Enter your address", required: true, multiline: true },
+    { id: "password", label: "Password", value: password, onChange: setPassword, placeholder: "Enter your password", required: true, secureTextEntry: true },
+    { id: "confirmPassword", label: "Confirm Password", value: confirmPassword, onChange: setConfirmPassword, placeholder: "Re-enter your password", required: true, secureTextEntry: true },
   ];
 
   // Role-specific fields insert immediately after role
   if (role === "doctor") {
     const doctorFields = [
-      { key: "specialization", label: "Specialization", value: specialization, onChange: setSpecialization, placeholder: "Enter your specialization", required: true },
-      { key: "licenseNo", label: "License Number", value: licenseNo, onChange: setLicenseNo, placeholder: "Enter your license number", required: true }
+      { id: "specialization", label: "Specialization", value: specialization, onChange: setSpecialization, placeholder: "Enter your specialization", required: true },
+      { id: "licenseNo", label: "License Number", value: licenseNo, onChange: setLicenseNo, placeholder: "Enter your license number", required: true }
     ];
     formFields.splice(5, 0, ...doctorFields);
   } else if (role === "patient") {
     const patientFields = [
-      { key: "age", label: "Age", value: age, onChange: setAge, placeholder: "Enter your age", required: true },
-      { key: "medicalHistory", label: "Medical History", value: medicalHistory, onChange: setMedicalHistory, placeholder: "Enter your medical history", required: true, multiline: true }
+      { id: "age", label: "Age", value: age, onChange: setAge, placeholder: "Enter your age", required: true },
+      { id: "medicalHistory", label: "Medical History", value: medicalHistory, onChange: setMedicalHistory, placeholder: "Enter your medical history", required: true, multiline: true }
     ];
     formFields.splice(5, 0, ...patientFields);
   }
@@ -94,11 +130,23 @@ export default function SignUpScreen({ navigation }) {
       <Text style={styles.title}>Create Account</Text>
       <FlatList
         data={formFields}
-        keyExtractor={(item) => item.key}
+        keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
         renderItem={({ item }) => {
           if (item.type === "role") return <RoleSelector role={role} setRole={setRole} error={errors.role} />;
-          return <InputField {...item} error={errors[item.key]} keyboardType={item.keyboardType} />;
+          return (
+            <InputField 
+              key={item.id}
+              label={item.label}
+              value={item.value}
+              onChange={item.onChange}
+              placeholder={item.placeholder}
+              required={item.required}
+              secureTextEntry={item.secureTextEntry}
+              error={errors[item.id]}
+              keyboardType={item.keyboardType}
+            />
+          );
         }}
         ListFooterComponent={
           <>

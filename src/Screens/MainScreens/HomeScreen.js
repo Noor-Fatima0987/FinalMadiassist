@@ -22,5 +22,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: moderateScale(25),
+    marginTop: moderateScale(15),
   },
 });
