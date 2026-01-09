@@ -1,10 +1,10 @@
 import React from "react";
 import { View, Text, Pressable } from "react-native";
 
-const SelectDoctor = ({ onPress }) => {
+const SelectDoctor = ({ onPress, selectedDoctor }) => {
   return (
     <View style={{ marginBottom: 16 }}>
-      <Text style={{ fontWeight: "bold", marginBottom: 8 }}>
+      <Text style={{ fontWeight: "bold", marginBottom: 8, color:"#180991ff" }}>
         Select Doctor
       </Text>
 
@@ -16,7 +16,7 @@ const SelectDoctor = ({ onPress }) => {
           backgroundColor: "#eee",
         }}
       >
-        <Text>Select Doctor</Text>
+        <Text>{selectedDoctor ? selectedDoctor.name : "Select Doctor"}</Text>
       </Pressable>
     </View>
   );

@@ -14,7 +14,7 @@ const ConfirmButton = ({ disabled, onPress }) => {
           ? "#ccc"
           : pressed
           ? "#43a047"
-          : "#4caf50",
+          : "#4C39DB",
       })}
     >
       <Text style={{ color: "#fff", fontWeight: "bold" }}>

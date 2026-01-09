@@ -6,5 +6,7 @@ export const appointments = [
 export const medications = [
   { time: "Morning", dose: ["1 Tablet Paracetamol", "1 Capsule Vitamin D"] },
   { time: "Afternoon", dose: "2 Capsules Vitamin C" },
+    { time: "Night", dose: "1 Capsules Vitamin E" },
+
   { time: "Evening", dose: "1 Tablet Ibuprofen" },
 ];

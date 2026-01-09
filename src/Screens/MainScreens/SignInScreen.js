@@ -45,7 +45,7 @@ export default function SignInScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Sign In</Text>
+      {/* <Text style={styles.title}>Sign In</Text> */}
       <FlatList
         data={formFields}
         keyExtractor={(item) => item.key}
