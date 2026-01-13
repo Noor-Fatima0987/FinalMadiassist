@@ -1,29 +1,37 @@
 {
   "expo": {
-    "name": "finalMadiAssist",
-    "slug": "finalMadiAssist",
+    "name": "MadiAssist",
+    "slug": "MadiAssist",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/assets/MediAssistLogo.jpeg",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
+      "image": "./assets/assets/MediAssistTittleLogo.jpeg",
+      "resizeMode": "cover",
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.noorfatima.finalMadiAssist"
     },
     "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.noorfatima.finalMadiAssist"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
-    }
+      "favicon": "./assets/assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/assets/MediAssistTittleLogo.jpeg",
+          "resizeMode": "cover",
+          "backgroundColor": "#ffffff"
+        }
+      ]
+    ]
   }
 }

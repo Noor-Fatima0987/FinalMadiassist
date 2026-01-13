@@ -17,8 +17,9 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(10),
     alignItems: "center",
     marginTop: moderateScale(10),
-    marginBottom: moderateScale(10),
+    marginBottom: moderateScale(30),
     elevation: 2,
   },
   buttonText: { color: "white", fontSize: platformFont(moderateScale(18)), fontWeight: "bold" },
 });
+

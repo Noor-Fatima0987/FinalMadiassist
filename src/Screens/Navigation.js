@@ -1,9 +1,9 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native'; 
+import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Ionicons } from '@expo/vector-icons'; 
+import { Ionicons } from '@expo/vector-icons';
 
 
 import HomePatientScreen from './PatientDashBoard/HomePatientScreen';
@@ -16,17 +16,122 @@ import HomeScreen from './MainScreens/HomeScreen';
 import OurDoctorScreen from './MainScreens/OurDoctorScreen';
 import SignInScreen from './MainScreens/SignInScreen';
 import SignUpScreen from './MainScreens/SignUpScreen';
+import Prescription from './PatientDashBoard/PrescriptionScreen'
+import HeaderMenu from '../Components/NavigatioComponent/HeaderMuen';
+import AddPrescription from "./DoctorDashBoard/AddprescriptionScreen";
+import PatientList from "./DoctorDashBoard/PatientsList"
 import HeaderMenu from '../Components/NavigatioComponent/HeaderMuen';
 import AboutUsScreen from './SettingScreen/AboutUsScreen';
 import EditAbleProfileScreen from './SettingScreen/EditAbleProfileScreen';
 import HomeSetting from './SettingScreen/HomeSetting';
 import ProfileScreen from './SettingScreen/ProfileScreen';
+import HeaderLogo from '../Components/NavigatioComponent/HeaderLogo';
+import BackButton from '../Components/NavigatioComponent/BackButton';
 
 
-  const Stack = createNativeStackNavigator(); 
-  // const Drawer = createDrawerNavigator(); 
-  const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
+// const Drawer = createDrawerNavigator(); 
+const Tab = createBottomTabNavigator();
 
+function PatientDrawer() {
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        headerTintColor: '#180991ff',
+        headerTitleStyle: { fontWeight: 'bold' },
+        headerTitleAlign: 'center',
+        tabBarActiveTintColor: '#090243ff',
+        tabBarInactiveTintColor: '#180991ff',
+      }}
+    >
+      <Tab.Screen name='Home' component={HomePatientScreen}
+        options={({ navigation }) => ({
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons name={focused ? 'home' : 'home-outline'} size={size} color={color} />
+          ),
+          headerShown: true,
+          headerTitle: "MadiAssist",
+          headerTitleAlign: 'center',
+          headerLeft: () => <HeaderLogo />,
+          headerRight: () => <HeaderMenu navigation={navigation} />,
+          // title: "Home",
+        })}
+      />
+      <Tab.Screen name='Book Appointment' component={BookAppointScreen}
+        options={{
+          headerTitle: "MadiAssist",
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons name={focused ? 'calendar' : 'calendar-outline'} size={size} color={color} />
+          ),
+          headerLeft: () => <BackButton />,
+        }}
+      />
+      <Tab.Screen name='Appointment Detial' component={AppointmentDetialScreen}
+        options={{
+          headerTitle: "MadiAssist",
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons name={focused ? 'list' : 'list-outline'} size={size} color={color} />
+          ),
+          headerLeft: () => <BackButton />,
+        }}
+      />
+      <Tab.Screen name='Remainder' component={RemainderScreen}
+        options={{
+          headerTitle: "MadiAssist",
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons name={focused ? 'alarm' : 'alarm-outline'} size={size} color={color} />
+          ),
+          headerLeft: () => <BackButton />,
+        }}
+      />
+    </Tab.Navigator>
+  );
+}
+
+function Doctordarwer() {
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        headerTintColor: '#180991ff',
+        headerTitleStyle: { fontWeight: 'bold' },
+        headerTitleAlign: 'center',
+        tabBarActiveTintColor: '#090243ff',
+        tabBarInactiveTintColor: '#180991ff',
+      }}
+    >
+      <Tab.Screen name='Home' component={HomeDoctorScreen}
+        options={({ navigation }) => ({
+          headerShown: true,
+          headerTitle: "MadiAssist",
+          headerTitleAlign: 'center',
+          headerLeft: () => <HeaderLogo />,
+          headerRight: () => <HeaderMenu navigation={navigation} />,
+          // title: "Home",
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons name={focused ? 'home' : 'home-outline'} size={size} color={color} />
+          ),
+        })}
+      />
+      <Tab.Screen name='Sedular' component={AppointmentSedula}
+        options={{
+          headerTitle: "MadiAssist",
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons name={focused ? 'calendar' : 'calendar-outline'} size={size} color={color} />
+          ),
+          headerLeft: () => <BackButton />,
+        }}
+      />
+      <Tab.Screen name='Add Prescription' component={AddPrescription}
+        options={{
+          headerTitle: "MadiAssist",
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons name={focused ? 'medical' : 'medical-outline'} size={size} color={color} />
+          ),
+          headerLeft: () => <BackButton />,
+        }}
+      />
+    </Tab.Navigator>
+  )
 function PatientDrawer(){
     return(
        <Tab.Navigator
@@ -103,26 +208,36 @@ function Doctordarwer(){
     )
 }
 
-function Navigation () {
+function Navigation() {
   return (
     <NavigationContainer>
       <Stack.Navigator
-       screenOptions={{ headerBackTitle: 'back', headerTintColor: '#180991ff', }}
+        screenOptions={{
+          headerBackTitle: 'back',
+          headerBackVisible: false,
+          headerShadowVisible: false,
+          headerTintColor: '#180991ff',
+          headerTitleStyle: { fontWeight: 'bold' },
+          headerTitleAlign: 'center',
+          headerLeft: () => <BackButton />,
+        }}
       >
-        <Stack.Screen name='Home' component={HomeScreen} 
+        <Stack.Screen name='Home' component={HomeScreen}
           options={{ headerShown: false, }}
         />
         <Stack.Screen name='Sign In' component={SignInScreen} />
         <Stack.Screen name='Sign Up' component={SignUpScreen} />
         <Stack.Screen name='Our Doctor' component={OurDoctorScreen} />
-        <Stack.Screen name='Main Doctor' component={Doctordarwer} 
+        <Stack.Screen name='Main Doctor' component={Doctordarwer}
           options={{ headerShown: false, }}
         />
-        <Stack.Screen name='Main Patient' component={PatientDrawer} 
+        <Stack.Screen name='Main Patient' component={PatientDrawer}
           options={{ headerShown: false, }}
         />
         <Stack.Screen name='Setting' component={HomeSetting} />
         <Stack.Screen name='Profile' component={ProfileScreen} />
+        <Stack.Screen name='Prescription' component={Prescription} />
+        <Stack.Screen name='Patient List' component={PatientList} />
         <Stack.Screen name='Edit Profile' component={EditAbleProfileScreen} />
       </Stack.Navigator>
     </NavigationContainer>
@@ -131,5 +246,9 @@ function Navigation () {
 
 export default Navigation;
 
-const styles = StyleSheet.create({ 
+const styles = StyleSheet.create({
 });
+
+
+
+
