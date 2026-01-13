@@ -4,7 +4,12 @@ import { UserContext } from '../../store/context/UserContext';
 import { Ionicons } from '@expo/vector-icons';
 
 const AppointmentDetialScreen = () => {
-  const { appointments } = useContext(UserContext);
+  const { user, appointments } = useContext(UserContext);
+
+  // Filter appointments to show only patient's own appointments
+  const patientAppointments = appointments.filter(
+    (appointment) => appointment.patientName === user.fullName
+  );
 
   const renderAppointmentItem = ({ item }) => (
     <View style={styles.appointmentBox}>
@@ -50,7 +55,7 @@ const AppointmentDetialScreen = () => {
       </View>
 
       <FlatList
-        data={appointments}
+        data={patientAppointments}
         keyExtractor={(item) => item.id}
         renderItem={renderAppointmentItem}
         contentContainerStyle={styles.listContent}

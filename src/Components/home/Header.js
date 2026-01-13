@@ -11,7 +11,7 @@ function Header({ navigation }) {
   return (
     <View style={styles.container}>
       <Image
-        source={require("../../assets/madiassist.jpeg")}
+        source={require("../../../assets/assets/MediAssistLogo.jpeg")}
         style={styles.logo}
         resizeMode="contain"
       />
@@ -35,7 +35,7 @@ export default Header;
 
 const styles = StyleSheet.create({
   container: {
-    flex:0.1,
+    flex: 0.1,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",

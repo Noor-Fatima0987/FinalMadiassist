@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, StyleSheet } from 'react-native';
+import { TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 
@@ -7,24 +7,17 @@ const BackButton = () => {
     const navigation = useNavigation();
 
     return (
-        <Pressable
+        <TouchableOpacity
             onPress={() => navigation.goBack()}
-            style={({ pressed }) => [
-                styles.container,
-                { opacity: pressed ? 0.5 : 1 }
-            ]}
+            activeOpacity={0.7}
+            style={{
+                marginLeft: 15,
+                backgroundColor: 'transparent',
+            }}
         >
             <Ionicons name="chevron-back" size={28} color="#180991ff" />
-        </Pressable>
+        </TouchableOpacity>
     );
 };
-
-const styles = StyleSheet.create({
-    container: {
-        paddingLeft: 10,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-});
 
 export default BackButton;

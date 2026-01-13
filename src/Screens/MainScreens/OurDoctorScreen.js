@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, Image, FlatList, StyleSheet } from "react-native";
+import { View, Text, FlatList, StyleSheet } from "react-native";
 import { doctorData } from '../../Data/DoctorData'
 
 function OurDoctorScreen() {

@@ -89,18 +89,18 @@ const HomeDoctorScreen = ({ navigation }) => {
             <Text style={styles.actionText}>My Schedule</Text>
           </Pressable>
 
-          <Pressable style={styles.actionItem}>
-            <View style={[styles.actionIcon, ]}>
+          <Pressable style={styles.actionItem} onPress={() => navigation.navigate('Patient List')}>
+            <View style={[styles.actionIcon,]}>
               <Ionicons name="people" size={24} color="#180991ff" />
             </View>
             <Text style={styles.actionText}>Patients</Text>
           </Pressable>
 
-          <Pressable style={styles.actionItem}>
+          <Pressable style={styles.actionItem} onPress={() => navigation.navigate('Add Prescription')}>
             <View style={[styles.actionIcon,]}>
-              <Ionicons name="document-text" size={24} color="#180991ff" />
+              <Ionicons name="medical" size={24} color="#180991ff" />
             </View>
-            <Text style={styles.actionText}>Reports</Text>
+            <Text style={styles.actionText}>Add Prescription</Text>
           </Pressable>
         </View>
 

@@ -94,6 +94,57 @@ export const UserProvider = ({ children }) => {
     },
   ]);
 
+  const [prescriptions, setPrescriptions] = useState([
+    {
+      id: "p1",
+      doctorName: "Dr. Ahmed Khan",
+      patientName: "M. Ahmed",
+      date: new Date().toISOString().split("T")[0],
+      medications: [
+        {
+          name: "Paracetamol",
+          dosage: "1 Tablet",
+          instructions: "After meal",
+          duration: "5 days",
+          times: ["08:00", "14:00", "21:00"]
+        },
+        {
+          name: "Vitamin C",
+          dosage: "2 Capsules",
+          instructions: "With water",
+          duration: "30 days",
+          times: ["09:00"]
+        }
+      ]
+    }
+  ]);
+
+  // Doctors state - stores all registered doctors
+  const [doctors, setDoctors] = useState([
+    {
+      id: "1",
+      fullName: "Dr. Ayesha Khan",
+      specialization: "Cardiologist",
+      licenseNo: "MED-12345",
+      contactNumber: "+92 300 4567890",
+      email: "ayesha.khan@mediassist.com",
+      experience: "10 years",
+      location: "Lahore, Pakistan",
+      availableTime: "Mon - Fri | 9:00 AM - 4:00 PM"
+    },
+    {
+      id: "2",
+      fullName: "Dr. Ahmed Khan",
+      specialization: "Cardiologist",
+      licenseNo: "MED-54321",
+      contactNumber: "+92 333 9876543",
+      email: "ahmed.khan@mediassist.com",
+      experience: "8 years",
+      location: "Karachi, Pakistan",
+      availableTime: "Tue - Sat | 10:00 AM - 6:00 PM"
+    }
+  ]);
+
   const saveUser = (userData) => {
     setUser(userData);
   };
@@ -108,6 +159,14 @@ export const UserProvider = ({ children }) => {
 
   const addMedication = (medication) => {
     setMedications((prev) => [...prev, medication]);
+  };
+
+  const addPrescription = (prescription) => {
+    setPrescriptions((prev) => [...prev, prescription]);
+  };
+
+  const addDoctor = (doctor) => {
+    setDoctors((prev) => [...prev, doctor]);
   };
 
   const logout = () => {
@@ -135,10 +194,14 @@ export const UserProvider = ({ children }) => {
         user,
         appointments,
         medications,
+        prescriptions,
+        doctors,
         saveUser,
         updateUser,
         addAppointment,
         addMedication,
+        addPrescription,
+        addDoctor,
         setMedications,
         logout,
       }}

@@ -1,5 +1,5 @@
 import React, { useState, useContext } from "react";
-import { View, Text, FlatList, StyleSheet } from "react-native";
+import { View, Text, FlatList, StyleSheet, KeyboardAvoidingView, Platform } from "react-native";
 import InputField from "../../Components/SigiUpComponent/InputField";
 import RoleSelector from "../../Components/SigiUpComponent/RoleSelector";
 import SubmitButton from "../../Components/SigiUpComponent/SubmitButton";
@@ -15,8 +15,8 @@ export default function SignInScreen({ navigation }) {
   const [role, setRole] = useState("");
   const [errors, setErrors] = useState({});
 
-  function SignUpHandler(){
-     navigation.navigate("Sign Up");
+  function SignUpHandler() {
+    navigation.navigate("Sign Up");
   }
 
   const handleLogin = () => {
@@ -44,24 +44,30 @@ export default function SignInScreen({ navigation }) {
   ];
 
   return (
-    <View style={styles.container}>
-      {/* <Text style={styles.title}>Sign In</Text> */}
-      <FlatList
-        data={formFields}
-        keyExtractor={(item) => item.key}
-        showsVerticalScrollIndicator={false}
-        renderItem={({ item }) => {
-          if (item.type === "role") return <RoleSelector role={role} setRole={setRole} error={errors.role} />;
-          return <InputField {...item} error={errors[item.key]} />;
-        }}
-        ListFooterComponent={
-          <>
-            <SignUpLink navigation={navigation}  onPress={SignUpHandler}/>
-            <SubmitButton title="Sign In" onPress={handleLogin} />
-          </>
-        }
-      />
-    </View>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? moderateScale(50) : moderateScale(50)}
+    >
+      <View style={styles.container}>
+        {/* <Text style={styles.title}>Sign In</Text> */}
+        <FlatList
+          data={formFields}
+          keyExtractor={(item) => item.key}
+          showsVerticalScrollIndicator={false}
+          renderItem={({ item }) => {
+            if (item.type === "role") return <RoleSelector role={role} setRole={setRole} error={errors.role} />;
+            return <InputField {...item} error={errors[item.key]} />;
+          }}
+          ListFooterComponent={
+            <>
+              <SignUpLink navigation={navigation} onPress={SignUpHandler} />
+              <SubmitButton title="Sign In" onPress={handleLogin} />
+            </>
+          }
+        />
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 

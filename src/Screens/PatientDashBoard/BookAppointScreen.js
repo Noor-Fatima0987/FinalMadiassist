@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext } from "react";
-import { ScrollView, Modal, View, Text, FlatList, Pressable, Alert ,StyleSheet} from "react-native";
+import { ScrollView, Modal, View, Text, FlatList, Pressable, Alert, StyleSheet } from "react-native";
 import { useRoute } from "@react-navigation/native";
 import SelectDoctor from "../../Components/PatientComponent/SelectDoctor";
 import DoctorSummaryCard from "../../Components/PatientComponent/DoctorSummaryCard";
@@ -12,7 +12,7 @@ import { UserContext } from "../../store/context/UserContext";
 
 const BookAppointmentScreen = ({ navigation }) => {
   // ---------------- CONTEXT ----------------
-  const { user, addAppointment } = useContext(UserContext);
+  const { user, doctors, addAppointment } = useContext(UserContext);
 
   // ---------------- STATES ----------------
   const [doctor, setDoctor] = useState(null);
@@ -38,7 +38,7 @@ const BookAppointmentScreen = ({ navigation }) => {
       patientName: user.fullName || "Test Patient",
       patientAge: user.age || "N/A",
       patientContact: contact,
-      doctorName: doctor.name,
+      doctorName: doctor.fullName,
       doctorSpecialization: doctor.specialization,
       date: date,
       time: time,
@@ -49,7 +49,7 @@ const BookAppointmentScreen = ({ navigation }) => {
 
     Alert.alert(
       "Appointment Confirmed",
-      `Your appointment with ${doctor.name} on ${date} at ${time} is confirmed. Details have been sent to the doctor.`
+      `Your appointment with ${doctor.fullName} on ${date} at ${time} is confirmed. Details have been sent to the doctor.`
     );
 
     // Optional: navigation.goBack();
@@ -59,78 +59,78 @@ const BookAppointmentScreen = ({ navigation }) => {
 
   // ---------------- UI ----------------
   return (
-    <ScrollView style={{ flex:1}}>
+    <ScrollView style={{ flex: 1 }}>
 
-       <View style={styles.headerPadding}>
-          <Text style={styles.title}>Book Appointment</Text>
-          {/* <Text style={styles.subtitle}>List of all your consultations</Text> */}
-       </View>
+      <View style={styles.headerPadding}>
+        <Text style={styles.title}>Book Appointment</Text>
+        {/* <Text style={styles.subtitle}>List of all your consultations</Text> */}
+      </View>
 
-       <View  style={{ padding:20}}>
+      <View style={{ padding: 20 }}>
 
-      {/* Select Doctor */}
-      <SelectDoctor
-        selectedDoctor={doctor}
-        onPress={() => setModalVisible(true)}
-      />
+        {/* Select Doctor */}
+        <SelectDoctor
+          selectedDoctor={doctor}
+          onPress={() => setModalVisible(true)}
+        />
 
-      {/* Doctor Modal */}
-      <Modal visible={modalVisible} transparent animationType="slide">
-        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center" }}>
-          <View style={{ width: "90%", backgroundColor: "#fff", borderRadius: 12, padding: 16, maxHeight: "70%" }}>
-            <Text style={{ fontWeight: "bold", fontSize: 18, marginBottom: 12 }}>Select Doctor</Text>
-            <FlatList
-              data={doctorData}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <Pressable
-                  onPress={() => {
-                    setDoctor(item);
-                    setModalVisible(false);
-                  }}
-                  style={{ padding: 12, borderBottomWidth: 1, borderColor: "#ddd" }}
-                >
-                  <Text style={{ fontWeight: "bold" }}>{item.name}</Text>
-                  <Text>{item.specialization}</Text>
-                </Pressable>
-              )}
-            />
-            <Pressable onPress={() => setModalVisible(false)} style={{ marginTop: 16, alignItems: "center" }}>
-              <Text style={{ color: "red" }}>Cancel</Text>
-            </Pressable>
+        {/* Doctor Modal */}
+        <Modal visible={modalVisible} transparent animationType="slide">
+          <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center" }}>
+            <View style={{ width: "90%", backgroundColor: "#fff", borderRadius: 12, padding: 16, maxHeight: "70%" }}>
+              <Text style={{ fontWeight: "bold", fontSize: 18, marginBottom: 12 }}>Select Doctor</Text>
+              <FlatList
+                data={doctors}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                  <Pressable
+                    onPress={() => {
+                      setDoctor(item);
+                      setModalVisible(false);
+                    }}
+                    style={{ padding: 12, borderBottomWidth: 1, borderColor: "#ddd" }}
+                  >
+                    <Text style={{ fontWeight: "bold" }}>{item.fullName}</Text>
+                    <Text>{item.specialization}</Text>
+                  </Pressable>
+                )}
+              />
+              <Pressable onPress={() => setModalVisible(false)} style={{ marginTop: 16, alignItems: "center" }}>
+                <Text style={{ color: "red" }}>Cancel</Text>
+              </Pressable>
+            </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
 
-      {/* Selected Doctor Summary */}
-      <DoctorSummaryCard doctor={doctor} />
+        {/* Selected Doctor Summary */}
+        <DoctorSummaryCard doctor={doctor} />
 
-      {/* Select Date (Calendar) */}
-      <SelectDate
-        selectedDate={date}
-        onSelect={(selectedDate) => {
-          setDate(selectedDate);
-          // setTime(null); // Optional: Keep time or reset? Removing reset to allow any order selection.
-        }}
-      />
+        {/* Select Date (Calendar) */}
+        <SelectDate
+          selectedDate={date}
+          onSelect={(selectedDate) => {
+            setDate(selectedDate);
+            // setTime(null); // Optional: Keep time or reset? Removing reset to allow any order selection.
+          }}
+        />
 
-      {/* Select Time */}
-      <SelectTime
-        selectedTime={time}
-        onSelect={(selectedTime) => setTime(selectedTime)}
-      />
+        {/* Select Time */}
+        <SelectTime
+          selectedTime={time}
+          onSelect={(selectedTime) => setTime(selectedTime)}
+        />
 
-      {/* Contact Details */}
-      <ContactDetails
-        value={contact}
-        onChange={setContact}
-      />
+        {/* Contact Details */}
+        <ContactDetails
+          value={contact}
+          onChange={setContact}
+        />
 
-      {/* Confirm Button */}
-      <ConfirmButton
-        disabled={isDisabled}
-        onPress={handleConfirm}
-      />
+        {/* Confirm Button */}
+        <ConfirmButton
+          disabled={isDisabled}
+          onPress={handleConfirm}
+        />
 
       </View>
     </ScrollView>

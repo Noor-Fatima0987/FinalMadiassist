@@ -16,7 +16,10 @@ import HomeScreen from './MainScreens/HomeScreen';
 import OurDoctorScreen from './MainScreens/OurDoctorScreen';
 import SignInScreen from './MainScreens/SignInScreen';
 import SignUpScreen from './MainScreens/SignUpScreen';
+import Prescription from './PatientDashBoard/PrescriptionScreen'
 import HeaderMenu from '../Components/NavigatioComponent/HeaderMuen';
+import AddPrescription from "./DoctorDashBoard/AddprescriptionScreen";
+import PatientList from "./DoctorDashBoard/PatientsList"
 import AboutUsScreen from './SettingScreen/AboutUsScreen';
 import EditAbleProfileScreen from './SettingScreen/EditAbleProfileScreen';
 import HomeSetting from './SettingScreen/HomeSetting';
@@ -33,9 +36,9 @@ function PatientDrawer() {
   return (
     <Tab.Navigator
       screenOptions={{
-        //  headerStyle: { backgroundColor: '#180991ff' },
         headerTintColor: '#180991ff',
         headerTitleStyle: { fontWeight: 'bold' },
+        headerTitleAlign: 'center',
         tabBarActiveTintColor: '#090243ff',
         tabBarInactiveTintColor: '#180991ff',
       }}
@@ -88,9 +91,9 @@ function Doctordarwer() {
   return (
     <Tab.Navigator
       screenOptions={{
-        //  headerStyle: { backgroundColor: '#180991ff' },
         headerTintColor: '#180991ff',
         headerTitleStyle: { fontWeight: 'bold' },
+        headerTitleAlign: 'center',
         tabBarActiveTintColor: '#090243ff',
         tabBarInactiveTintColor: '#180991ff',
       }}
@@ -117,6 +120,15 @@ function Doctordarwer() {
           headerLeft: () => <BackButton />,
         }}
       />
+      <Tab.Screen name='Add Prescription' component={AddPrescription}
+        options={{
+          headerTitle: "MadiAssist",
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons name={focused ? 'medical' : 'medical-outline'} size={size} color={color} />
+          ),
+          headerLeft: () => <BackButton />,
+        }}
+      />
     </Tab.Navigator>
   )
 }
@@ -127,8 +139,11 @@ function Navigation() {
       <Stack.Navigator
         screenOptions={{
           headerBackTitle: 'back',
+          headerBackVisible: false,
+          headerShadowVisible: false,
           headerTintColor: '#180991ff',
           headerTitleStyle: { fontWeight: 'bold' },
+          headerTitleAlign: 'center',
           headerLeft: () => <BackButton />,
         }}
       >
@@ -146,6 +161,8 @@ function Navigation() {
         />
         <Stack.Screen name='Setting' component={HomeSetting} />
         <Stack.Screen name='Profile' component={ProfileScreen} />
+        <Stack.Screen name='Prescription' component={Prescription} />
+        <Stack.Screen name='Patient List' component={PatientList} />
         <Stack.Screen name='Edit Profile' component={EditAbleProfileScreen} />
       </Stack.Navigator>
     </NavigationContainer>
@@ -159,6 +176,4 @@ const styles = StyleSheet.create({
 
 
 
-// doctor dashboard ma buttom tabs ma ek screenn. add karni ha add prescription ki
 
-// is screen ma doctor jes patient ka checkup kar rah ha os patient ki kuch important detial add kara ka jasa hi doctor os patient ki detial add kara ka to new screen open ho gi jes ma wo patient ki prescription. add kar saka ka or jasa hio doctor oss patient ki prescrition add kara to wo  os patient ki screen ma update hoi jay???

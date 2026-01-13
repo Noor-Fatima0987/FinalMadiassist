@@ -5,7 +5,7 @@ const HeaderLogo = () => {
     return (
         <View style={styles.container}>
             <Image
-                source={require('../../assets/madiassist.jpeg')}
+                source={require('../../../assets/assets/MediAssistLogo.jpeg')}
                 style={styles.logo}
                 resizeMode="contain"
             />
@@ -15,7 +15,7 @@ const HeaderLogo = () => {
 
 const styles = StyleSheet.create({
     container: {
-        paddingLeft: 10,
+        paddingLeft: 20,
     },
     logo: {
         width: 40,

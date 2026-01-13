@@ -1,5 +1,5 @@
 import React, { useContext, useMemo } from "react";
-import { View, Text, ScrollView, StyleSheet, SafeAreaView, TextInput, Image, Pressable } from "react-native";
+import { View, Text, ScrollView, StyleSheet, SafeAreaView, TextInput, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { UserContext } from "../../store/context/UserContext";
 import AppointmentCard from "../../Components/PatientComponent/AppointmentCard";
@@ -7,7 +7,12 @@ import QuickActionButton from "../../Components/PatientComponent/QuickActionButt
 import MedicationCard from "../../Components/PatientComponent/MedicationCard";
 
 const HomePatientScreen = ({ navigation }) => {
-  const { user, appointments, medications } = useContext(UserContext);
+  const { user, appointments, prescriptions } = useContext(UserContext);
+
+  // Extract medications from patient's prescriptions
+  const dailyMedications = prescriptions
+    .filter(prescription => prescription.patientName === user.fullName)
+    .flatMap(prescription => prescription.medications);
 
   // --- Logic for Upcoming Appointment ---
   const today = new Date().toISOString().split("T")[0];
@@ -79,22 +84,22 @@ const HomePatientScreen = ({ navigation }) => {
           <QuickActionButton
             icon="calendar"
             text="Book Appointment"
-            onPress={() => navigation.navigate("BookAppointment")}
+            onPress={() => navigation.navigate("Book Appointment")}
           />
           <QuickActionButton
             icon="document-text"
             text="History"
-            onPress={() => navigation.navigate("AppointmentDetails")}
+            onPress={() => navigation.navigate("Appointment Detial")}
           />
           <QuickActionButton
             icon="medkit"
-            text="Medicines"
-            onPress={() => { }}
+            text="Prescription"
+            onPress={() => navigation.navigate("Prescription")}
           />
           <QuickActionButton
             icon="person"
             text="Profile"
-            onPress={() => navigation.navigate("Settings")}
+            onPress={() => navigation.navigate("Profile")}
           />
         </View>
 
@@ -104,8 +109,8 @@ const HomePatientScreen = ({ navigation }) => {
           <Text style={styles.sectionTitle}>Daily Medications</Text>
         </View>
 
-        {medications && medications.length > 0 ? (
-          medications.map((m, index) => (
+        {dailyMedications && dailyMedications.length > 0 ? (
+          dailyMedications.map((m, index) => (
             <MedicationCard key={index} time={m.times[0]} dose={m.dosage + " - " + m.name} />
           ))
         ) : (

@@ -1,5 +1,5 @@
 import React, { useState, useContext } from "react";
-import { View, Text, FlatList, StyleSheet } from "react-native";
+import { View, Text, FlatList, StyleSheet, KeyboardAvoidingView, Platform } from "react-native";
 import InputField from "../../Components/SigiUpComponent/InputField";
 import RoleSelector from "../../Components/SigiUpComponent/RoleSelector";
 import SubmitButton from "../../Components/SigiUpComponent/SubmitButton";
@@ -8,7 +8,7 @@ import { UserContext } from "../../store/context/UserContext";
 import { moderateScale, platformFont } from "../../utils/responsive";
 
 export default function SignUpScreen({ navigation }) {
-  const { saveUser } = useContext(UserContext);
+  const { saveUser, addDoctor } = useContext(UserContext);
 
   // State variables
   const [fullName, setFullName] = useState("");
@@ -28,10 +28,10 @@ export default function SignUpScreen({ navigation }) {
   const [errors, setErrors] = useState({});
 
   // Handle account creation
-  function SignInHandler(){
-     navigation.navigate("Sign In");
+  function SignInHandler() {
+    navigation.navigate("Sign In");
   }
-  
+
   const handleCreateAccount = () => {
     const newErrors = {};
 
@@ -68,21 +68,21 @@ export default function SignUpScreen({ navigation }) {
     //   else navigation.navigate("Main Patient");
     // }
     if (Object.keys(newErrors).length === 0) {
-       let userData = {
-         fullName,
-         userName,
-         gender,
-         email,
-         role,
-         cnic,
-         contactNumber,
-         address,
-         password,
-       };
+      let userData = {
+        fullName,
+        userName,
+        gender,
+        email,
+        role,
+        cnic,
+        contactNumber,
+        address,
+        password,
+      };
       if (role === "doctor") {
-       userData.specialization = specialization;
-       userData.licenseNo = licenseNo;
-      } 
+        userData.specialization = specialization;
+        userData.licenseNo = licenseNo;
+      }
       else if (role === "patient") {
         userData.age = age;
         userData.medicalHistory = medicalHistory;
@@ -90,9 +90,25 @@ export default function SignUpScreen({ navigation }) {
 
       saveUser(userData);
 
+      // If role is doctor, add to doctors array
+      if (role === "doctor") {
+        const doctorData = {
+          id: Date.now().toString(),
+          fullName,
+          specialization,
+          licenseNo,
+          contactNumber,
+          email,
+          experience: "New Doctor",
+          location: address,
+          availableTime: "Please set your availability"
+        };
+        addDoctor(doctorData);
+      }
+
       if (role === "doctor") navigation.navigate("Main Doctor");
       else navigation.navigate("Main Patient");
-   }
+    }
 
   };
 
@@ -110,52 +126,58 @@ export default function SignUpScreen({ navigation }) {
     { id: "confirmPassword", label: "Confirm Password", value: confirmPassword, onChange: setConfirmPassword, placeholder: "Re-enter your password", required: true, secureTextEntry: true },
   ];
 
-  // Role-specific fields insert immediately after role
+  // Role-specific fields insert below role selector
   if (role === "doctor") {
     const doctorFields = [
       { id: "specialization", label: "Specialization", value: specialization, onChange: setSpecialization, placeholder: "Enter your specialization", required: true },
       { id: "licenseNo", label: "License Number", value: licenseNo, onChange: setLicenseNo, placeholder: "Enter your license number", required: true }
     ];
-    formFields.splice(5, 0, ...doctorFields);
+    formFields.splice(6, 0, ...doctorFields);
   } else if (role === "patient") {
     const patientFields = [
       { id: "age", label: "Age", value: age, onChange: setAge, placeholder: "Enter your age", required: true },
       { id: "medicalHistory", label: "Medical History", value: medicalHistory, onChange: setMedicalHistory, placeholder: "Enter your medical history", required: true, multiline: true }
     ];
-    formFields.splice(5, 0, ...patientFields);
+    formFields.splice(6, 0, ...patientFields);
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Create Account</Text>
-      <FlatList
-        data={formFields}
-        keyExtractor={(item) => item.id}
-        showsVerticalScrollIndicator={false}
-        renderItem={({ item }) => {
-          if (item.type === "role") return <RoleSelector role={role} setRole={setRole} error={errors.role} />;
-          return (
-            <InputField 
-              key={item.id}
-              label={item.label}
-              value={item.value}
-              onChange={item.onChange}
-              placeholder={item.placeholder}
-              required={item.required}
-              secureTextEntry={item.secureTextEntry}
-              error={errors[item.id]}
-              keyboardType={item.keyboardType}
-            />
-          );
-        }}
-        ListFooterComponent={
-          <>
-            <SignInLink navigation={navigation} onPress={SignInHandler}/>
-            <SubmitButton title="Create Account" onPress={handleCreateAccount} />
-          </>
-        }
-      />
-    </View>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? moderateScale(50) : moderateScale(50)}
+    >
+      <View style={styles.container}>
+        <Text style={styles.title}>Create Account</Text>
+        <FlatList
+          data={formFields}
+          keyExtractor={(item) => item.id}
+          showsVerticalScrollIndicator={false}
+          renderItem={({ item }) => {
+            if (item.type === "role") return <RoleSelector role={role} setRole={setRole} error={errors.role} />;
+            return (
+              <InputField
+                key={item.id}
+                label={item.label}
+                value={item.value}
+                onChange={item.onChange}
+                placeholder={item.placeholder}
+                required={item.required}
+                secureTextEntry={item.secureTextEntry}
+                error={errors[item.id]}
+                keyboardType={item.keyboardType}
+              />
+            );
+          }}
+          ListFooterComponent={
+            <>
+              <SignInLink navigation={navigation} onPress={SignInHandler} />
+              <SubmitButton title="Create Account" onPress={handleCreateAccount} />
+            </>
+          }
+        />
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 
