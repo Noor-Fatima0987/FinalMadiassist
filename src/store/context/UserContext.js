@@ -163,6 +163,19 @@ export const UserProvider = ({ children }) => {
 
   const addPrescription = (prescription) => {
     setPrescriptions((prev) => [...prev, prescription]);
+
+    // Auto-sync medications for the patient (for local demo simulation)
+    // In a real app, this would happen via backend/websocket
+    if (prescription.medications && prescription.medications.length > 0) {
+      const newMedications = prescription.medications.map(med => ({
+        id: Math.random().toString(36).substr(2, 9),
+        ...med,
+        startDate: prescription.date,
+        active: true,
+        patientName: prescription.patientName // associate for auditing
+      }));
+      setMedications((prev) => [...prev, ...newMedications]);
+    }
   };
 
   const addDoctor = (doctor) => {

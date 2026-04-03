@@ -13,8 +13,9 @@ import { UserContext } from '../../store/context/UserContext';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 
-const AddPrescriptionScreen = ({ navigation }) => {
+const AddPrescriptionScreen = ({ navigation, route }) => {
   const { user, appointments, addPrescription } = useContext(UserContext);
+  const { patientName } = route.params || {};
 
   // Get unique patients for this doctor
   const doctorPatients = Array.from(
@@ -25,7 +26,13 @@ const AddPrescriptionScreen = ({ navigation }) => {
     )
   );
 
-  const [selectedPatient, setSelectedPatient] = useState('');
+  const [selectedPatient, setSelectedPatient] = useState(patientName || '');
+
+  React.useEffect(() => {
+    if (patientName) {
+      setSelectedPatient(patientName);
+    }
+  }, [patientName]);
   const [medications, setMedications] = useState([
     {
       name: '',

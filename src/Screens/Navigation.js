@@ -20,7 +20,7 @@ import Prescription from './PatientDashBoard/PrescriptionScreen'
 import HeaderMenu from '../Components/NavigatioComponent/HeaderMuen';
 import AddPrescription from "./DoctorDashBoard/AddprescriptionScreen";
 import PatientList from "./DoctorDashBoard/PatientsList"
-import HeaderMenu from '../Components/NavigatioComponent/HeaderMuen';
+// import HeaderMenu from '../Components/NavigatioComponent/HeaderMuen';
 import AboutUsScreen from './SettingScreen/AboutUsScreen';
 import EditAbleProfileScreen from './SettingScreen/EditAbleProfileScreen';
 import HomeSetting from './SettingScreen/HomeSetting';
@@ -132,81 +132,82 @@ function Doctordarwer() {
       />
     </Tab.Navigator>
   )
-function PatientDrawer(){
-    return(
-       <Tab.Navigator
-         screenOptions={{
-        //  headerStyle: { backgroundColor: '#180991ff' },
-         headerTintColor: '#180991ff',
-         headerTitleStyle: { fontWeight: 'bold' },
-         tabBarActiveTintColor: '#090243ff',
-         tabBarInactiveTintColor: '#180991ff',
-         }}
-       >
-        <Tab.Screen name='Home' component={HomePatientScreen}
-           options={({ navigation }) => ({
-              tabBarIcon: ({ focused, color, size }) => (
-                <Ionicons name={focused ? 'home' : 'home-outline'} size={size} color={color} />
-               ),
-                 headerShown: true,
-                 headerRight: () => <HeaderMenu navigation={navigation} />,
-                 title: "Home",
-             })}
-        />
-        <Tab.Screen name='Book Appointment' component={BookAppointScreen} 
-          options={{
-            tabBarIcon: ({ focused, color, size }) => (
-            <Ionicons name={focused ? 'calendar' : 'calendar-outline'} size={size} color={color} />
-            ),
-          }}
-        />
-        <Tab.Screen name='Appointment Detial' component={AppointmentDetialScreen} 
-           options={{
-             tabBarIcon: ({ focused, color, size }) => (
-               <Ionicons name={focused ? 'list' : 'list-outline'} size={size} color={color} />
-             ),
-           }}
-        />
-        <Tab.Screen name='Remainder' component={RemainderScreen} 
-          options={{
-            tabBarIcon: ({ focused, color, size }) => (
-              <Ionicons name={focused ? 'alarm' : 'alarm-outline'} size={size} color={color} />
-            ),
-          }}
-        />
-       </Tab.Navigator>
-    );
 }
+// function PatientDrawer(){
+//     return(
+//        <Tab.Navigator
+//          screenOptions={{
+//         //  headerStyle: { backgroundColor: '#180991ff' },
+//          headerTintColor: '#180991ff',
+//          headerTitleStyle: { fontWeight: 'bold' },
+//          tabBarActiveTintColor: '#090243ff',
+//          tabBarInactiveTintColor: '#180991ff',
+//          }}
+//        >
+//         <Tab.Screen name='Home' component={HomePatientScreen}
+//            options={({ navigation }) => ({
+//               tabBarIcon: ({ focused, color, size }) => (
+//                 <Ionicons name={focused ? 'home' : 'home-outline'} size={size} color={color} />
+//                ),
+//                  headerShown: true,
+//                  headerRight: () => <HeaderMenu navigation={navigation} />,
+//                  title: "Home",
+//              })}
+//         />
+//         <Tab.Screen name='Book Appointment' component={BookAppointScreen} 
+//           options={{
+//             tabBarIcon: ({ focused, color, size }) => (
+//             <Ionicons name={focused ? 'calendar' : 'calendar-outline'} size={size} color={color} />
+//             ),
+//           }}
+//         />
+//         <Tab.Screen name='Appointment Detial' component={AppointmentDetialScreen} 
+//            options={{
+//              tabBarIcon: ({ focused, color, size }) => (
+//                <Ionicons name={focused ? 'list' : 'list-outline'} size={size} color={color} />
+//              ),
+//            }}
+//         />
+//         <Tab.Screen name='Remainder' component={RemainderScreen} 
+//           options={{
+//             tabBarIcon: ({ focused, color, size }) => (
+//               <Ionicons name={focused ? 'alarm' : 'alarm-outline'} size={size} color={color} />
+//             ),
+//           }}
+//         />
+//        </Tab.Navigator>
+//     );
+// }
 
-function Doctordarwer(){
-    return(
-        <Tab.Navigator
-           screenOptions={{
-           //  headerStyle: { backgroundColor: '#180991ff' },
-           headerTintColor: '#180991ff',
-           headerTitleStyle: { fontWeight: 'bold' },
-           }}
-         >
-            <Tab.Screen name='Home' component={HomeDoctorScreen}
-              options={({ navigation }) => ({
-                 headerShown: true,
-                 headerRight: () => <HeaderMenu navigation={navigation} />,
-                 title: "Home",
-                 tabBarIcon: ({ focused, color, size }) => (
-                   <Ionicons name={focused ? 'home' : 'home-outline'} size={size} color={color} />
-                 ),
-              })}
-            />
-            <Tab.Screen name='Sedular' component={AppointmentSedula} 
-              options={{
-                tabBarIcon: ({ focused, color, size }) => (
-                  <Ionicons name={focused ? 'calendar' : 'calendar-outline'} size={size} color={color} />
-                ),
-              }}
-            />
-        </Tab.Navigator>
-    )
-}
+// function Doctordarwer(){
+//     return(
+//         <Tab.Navigator
+//            screenOptions={{
+//            //  headerStyle: { backgroundColor: '#180991ff' },
+//            headerTintColor: '#180991ff',
+//            headerTitleStyle: { fontWeight: 'bold' },
+//            }}
+//          >
+//             <Tab.Screen name='Home' component={HomeDoctorScreen}
+//               options={({ navigation }) => ({
+//                  headerShown: true,
+//                  headerRight: () => <HeaderMenu navigation={navigation} />,
+//                  title: "Home",
+//                  tabBarIcon: ({ focused, color, size }) => (
+//                    <Ionicons name={focused ? 'home' : 'home-outline'} size={size} color={color} />
+//                  ),
+//               })}
+//             />
+//             <Tab.Screen name='Sedular' component={AppointmentSedula} 
+//               options={{
+//                 tabBarIcon: ({ focused, color, size }) => (
+//                   <Ionicons name={focused ? 'calendar' : 'calendar-outline'} size={size} color={color} />
+//                 ),
+//               }}
+//             />
+//         </Tab.Navigator>
+//     )
+// }
 
 function Navigation() {
   return (
@@ -252,3 +253,9 @@ const styles = StyleSheet.create({
 
 
 
+// theek ha 
+// ab ma jati ho ka jab doctor add prescription wala screen sa pala patient select kara jo jo patient is doctor sa checkup karvata ha o ma sa 
+// per doctor os patient ki prescription add kara  with time 
+// jab doctor patient ki prescription add kar ka save kara ka to os patient ko prescription wali screen per os ki prescription show honi chaya
+
+// or os prescriptiuon ka according jab patient ki madicien ka time ho to patient ko notification bi recive ho ka ap ka ya medicien lana ka time ho kay ha ta ka patient apni medicine time per la saka??????
