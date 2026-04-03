@@ -17,6 +17,7 @@ import {
   formatTimeRemaining,
   formatTo12Hour,
 } from '../../utils/reminderUtils';
+import { syncNotificationsWithMedications } from '../../utils/notificationUtils';
 import { Ionicons } from '@expo/vector-icons';
 
 const RemainderScreen = () => {
@@ -37,6 +38,10 @@ const RemainderScreen = () => {
     };
 
     updateReminders();
+
+    // Sync system notifications
+    syncNotificationsWithMedications(medications);
+
     const interval = setInterval(updateReminders, 60000); // Update every minute
 
     return () => clearInterval(interval);

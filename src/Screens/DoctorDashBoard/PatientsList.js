@@ -1,9 +1,11 @@
 import React, { useContext, useState, useMemo } from 'react';
-import { StyleSheet, Text, View, FlatList, SafeAreaView, TextInput } from 'react-native';
+import { StyleSheet, Text, View, FlatList, SafeAreaView, TextInput, Pressable } from 'react-native';
 import { UserContext } from '../../store/context/UserContext';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 
 const PatientsList = () => {
+  const navigation = useNavigation();
   const { user, appointments } = useContext(UserContext);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -61,6 +63,13 @@ const PatientsList = () => {
       <View style={styles.patientDetails}>
         <Text style={styles.detailLabel}>Age</Text>
         <Text style={styles.detailValue}>{item.age}</Text>
+        <Pressable
+          style={styles.prescribeIcon}
+          onPress={() => navigation.navigate('Add Prescription', { patientName: item.name })}
+        >
+          <Ionicons name="add-circle" size={24} color="#180991" />
+          <Text style={styles.prescribeText}>Prescribe</Text>
+        </Pressable>
       </View>
     </View>
   );
@@ -202,6 +211,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#180991',
+    marginBottom: 10,
+  },
+  prescribeIcon: {
+    alignItems: 'center',
+    marginTop: 5,
+  },
+  prescribeText: {
+    fontSize: 10,
+    color: '#180991',
+    fontWeight: 'bold',
   },
   emptyContainer: {
     marginTop: 100,
