@@ -21,11 +21,37 @@ import { syncNotificationsWithMedications } from '../../utils/notificationUtils'
 import { Ionicons } from '@expo/vector-icons';
 
 const RemainderScreen = () => {
-  const { medications } = useContext(UserContext);
+  const { user } = useContext(UserContext); // Removed medications from context
+  const [medications, setMedications] = useState([]);
   const [nextReminder, setNextReminder] = useState(null);
   const [timeUntil, setTimeUntil] = useState(0);
   const [medModalVisible, setMedModalVisible] = useState(false);
   const [scheduleModalVisible, setScheduleModalVisible] = useState(false);
+
+  const BACKEND_URL = "https://orange-poems-find.loca.lt";
+
+  // Fetch prescriptions from DB
+  useEffect(() => {
+    const fetchPrescriptions = async () => {
+      try {
+        const response = await fetch(`${BACKEND_URL}/api/prescriptions/patient/${user.id}`);
+        const data = await response.json();
+        if (response.ok) {
+          // Extract medications from all prescriptions
+          const allMedications = [];
+          data.forEach(prescription => {
+            if (prescription.medications) {
+              allMedications.push(...prescription.medications);
+            }
+          });
+          setMedications(allMedications);
+        }
+      } catch (error) {
+        console.error("Error fetching prescriptions for reminders:", error);
+      }
+    };
+    fetchPrescriptions();
+  }, [user.id]);
 
   // ---------------- AUTO UPDATE LOGIC ----------------
   useEffect(() => {

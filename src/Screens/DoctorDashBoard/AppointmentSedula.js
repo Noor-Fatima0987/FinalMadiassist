@@ -1,27 +1,74 @@
 import { View, Text, FlatList, StyleSheet, SafeAreaView, ScrollView, Pressable } from 'react-native';
-import React, { useContext, useMemo } from 'react';
+import React, { useContext, useMemo, useState, useEffect } from 'react';
 import { UserContext } from '../../store/context/UserContext';
 import { Ionicons } from '@expo/vector-icons';
 
-function AppointmentSedula() {
-  const { appointments, user } = useContext(UserContext);
+const BACKEND_URL = "https://orange-poems-find.loca.lt";
+
+function AppointmentSedula({ navigation }) {
+  const { user } = useContext(UserContext); // Removed appointments from context
+  const [dbAppointments, setDbAppointments] = useState([]);
+
+  // Fetch appointments for this doctor
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      try {
+        const response = await fetch(`${BACKEND_URL}/api/appointments/${user.id}`);
+        const data = await response.json();
+        if (response.ok) {
+          setDbAppointments(data);
+        }
+      } catch (error) {
+        console.error("Error fetching doctor appointments:", error);
+      }
+    };
+    
+    // Add navigation listener to refresh on focus if navigation prop is available
+    if (navigation) {
+      const unsubscribe = navigation.addListener('focus', () => {
+        fetchAppointments();
+      });
+      return unsubscribe;
+    } else {
+      fetchAppointments();
+    }
+  }, [navigation, user.id]);
 
   // Get today's date in YYYY-MM-DD format
   const todayDate = new Date().toISOString().split('T')[0];
 
-  // Filter appointments for this doctor AND for today
+  // Filter appointments for today (the API already filters by this doctor's ID)
   const todayAppointments = useMemo(() => {
-    return appointments.filter(app =>
-      app.doctorName === user.fullName && app.date === todayDate
+    return dbAppointments.filter(app =>
+      app.date === todayDate
     ).sort((a, b) => a.time.localeCompare(b.time));
-  }, [appointments, user.fullName, todayDate]);
+  }, [dbAppointments, todayDate]);
 
   // Filter other upcoming appointments
   const upcomingAppointments = useMemo(() => {
-    return appointments.filter(app =>
-      app.doctorName === user.fullName && app.date > todayDate
+    return dbAppointments.filter(app =>
+      app.date > todayDate
     ).sort((a, b) => a.date.localeCompare(b.date));
-  }, [appointments, user.fullName, todayDate]);
+  }, [dbAppointments, todayDate]);
+
+  // Function to mark appointment as done
+  const handleMarkDone = async (appointmentId) => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/appointments/${appointmentId}/status`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "Completed" })
+      });
+      if (response.ok) {
+        // Update local state to reflect change
+        setDbAppointments(prev => prev.map(app => 
+          app.id === appointmentId ? { ...app, status: "Completed" } : app
+        ));
+      }
+    } catch (error) {
+      console.error("Error updating status:", error);
+    }
+  };
 
   const renderAppointmentCard = ({ item }) => (
     <View style={styles.card}>
@@ -33,14 +80,14 @@ function AppointmentSedula() {
       <View style={styles.cardContent}>
         <View style={styles.patientRow}>
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{item.patientName.charAt(0)}</Text>
+            <Text style={styles.avatarText}>{item.patient?.fullName?.charAt(0) || 'P'}</Text>
           </View>
           <View style={styles.patientInfo}>
-            <Text style={styles.patientName}>{item.patientName}</Text>
-            <Text style={styles.patientSub}>Age: {item.patientAge} • {item.patientContact}</Text>
+            <Text style={styles.patientName}>{item.patient?.fullName || "Unknown Patient"}</Text>
+            <Text style={styles.patientSub}>Status: {item.status}</Text>
           </View>
-          <View style={styles.statusBadge}>
-            <Text style={styles.statusText}>{item.status}</Text>
+          <View style={[styles.statusBadge, item.status === "Completed" && { backgroundColor: "#e8f5e9" }]}>
+            <Text style={[styles.statusText, item.status === "Completed" && { color: "#2e7d32" }]}>{item.status}</Text>
           </View>
         </View>
 
@@ -49,9 +96,11 @@ function AppointmentSedula() {
             <Ionicons name="calendar-outline" size={14} color="#180991" />
             <Text style={styles.pillText}>{item.date}</Text>
           </View>
-          <Pressable style={styles.viewBtn}>
-            <Text style={styles.viewBtnText}>Start Checkup</Text>
-          </Pressable>
+          {item.status !== "Completed" && (
+            <Pressable style={styles.viewBtn} onPress={() => handleMarkDone(item.id)}>
+              <Text style={styles.viewBtnText}>Mark as Done</Text>
+            </Pressable>
+          )}
         </View>
       </View>
     </View>

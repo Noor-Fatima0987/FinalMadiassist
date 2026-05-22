@@ -4,8 +4,12 @@ import InputField from "../../Components/SigiUpComponent/InputField";
 import RoleSelector from "../../Components/SigiUpComponent/RoleSelector";
 import SubmitButton from "../../Components/SigiUpComponent/SubmitButton";
 import SignInLink from "../../Components/SigiUpComponent/SignInLink";
+import { auth } from "../../firebase/firebaseConfig";
+import { createUserWithEmailAndPassword } from "firebase/auth";
 import { UserContext } from "../../store/context/UserContext";
 import { moderateScale, platformFont } from "../../utils/responsive";
+
+const BACKEND_URL = "https://orange-poems-find.loca.lt"; // Localtunnel URL
 
 export default function SignUpScreen({ navigation }) {
   const { saveUser, addDoctor } = useContext(UserContext);
@@ -32,7 +36,7 @@ export default function SignUpScreen({ navigation }) {
     navigation.navigate("Sign In");
   }
 
-  const handleCreateAccount = () => {
+  const handleCreateAccount = async () => {
     const newErrors = {};
 
     if (!fullName.trim()) newErrors.fullName = "Full name is required";
@@ -61,55 +65,45 @@ export default function SignUpScreen({ navigation }) {
 
     setErrors(newErrors);
 
-    // if (Object.keys(newErrors).length === 0) {
-    //   const userData = { fullName, userName, gender, role, cnic, contactNumber, address, password, specialization, licenseNo, age, medicalHistory };
-    //   saveUser(userData);
-    //   if (role === "doctor") navigation.navigate("Main Doctor");
-    //   else navigation.navigate("Main Patient");
-    // }
     if (Object.keys(newErrors).length === 0) {
-      let userData = {
-        fullName,
-        userName,
-        gender,
-        email,
-        role,
-        cnic,
-        contactNumber,
-        address,
-        password,
-      };
-      if (role === "doctor") {
-        userData.specialization = specialization;
-        userData.licenseNo = licenseNo;
-      }
-      else if (role === "patient") {
-        userData.age = age;
-        userData.medicalHistory = medicalHistory;
-      }
+      try {
+        // 1. Firebase Auth mein user create karo
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const firebaseUser = userCredential.user;
 
-      saveUser(userData);
+        // 2. Humare Backend Server (PostgreSQL) ko data bhejo
+        const response = await fetch(`${BACKEND_URL}/api/signup`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            firebaseId: firebaseUser.uid,
+            email,
+            fullName,
+            role,
+            specialization,
+            age,
+            medicalHistory
+          }),
+        });
 
-      // If role is doctor, add to doctors array
-      if (role === "doctor") {
-        const doctorData = {
-          id: Date.now().toString(),
-          fullName,
-          specialization,
-          licenseNo,
-          contactNumber,
-          email,
-          experience: "New Doctor",
-          location: address,
-          availableTime: "Please set your availability"
-        };
-        addDoctor(doctorData);
+        const result = await response.json();
+
+        if (response.ok) {
+          alert("Account Created Successfully!");
+          saveUser(result); // result is the user object itself
+          if (role === "doctor") navigation.navigate("Main Doctor");
+          else navigation.navigate("Main Patient");
+        } else {
+          alert("Database error: " + result.error);
+        }
+
+      } catch (error) {
+        console.error(error);
+        alert("Registration Error: " + error.message);
       }
-
-      if (role === "doctor") navigation.navigate("Main Doctor");
-      else navigation.navigate("Main Patient");
     }
-
   };
 
   // Build form fields dynamically

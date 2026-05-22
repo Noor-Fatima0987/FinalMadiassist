@@ -13,7 +13,7 @@ export default function ProfileScreen({ navigation }) {
       
       {Object.entries(user).map(([key, value]) => {
         if (!value) return null;
-        if (key === "password") return null;
+        if (["password", "id", "firebaseId", "createdAt", "updatedAt"].includes(key)) return null;
 
         return (
           <ProfileField

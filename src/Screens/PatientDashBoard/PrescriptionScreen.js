@@ -3,20 +3,42 @@ import { StyleSheet, Text, View, FlatList, SafeAreaView } from 'react-native';
 import { UserContext } from '../../store/context/UserContext';
 import { Ionicons } from '@expo/vector-icons';
 
-const PrescriptionScreen = () => {
-  const { user, prescriptions } = useContext(UserContext);
+const BACKEND_URL = "https://orange-poems-find.loca.lt";
 
-  // Filter prescriptions for the current patient
-  const patientPrescriptions = prescriptions.filter(
-    (prescription) => prescription.patientName === user.fullName
-  );
+const PrescriptionScreen = ({ navigation }) => {
+  const { user } = useContext(UserContext); // Removed prescriptions from context
+  const [dbPrescriptions, setDbPrescriptions] = React.useState([]);
+
+  React.useEffect(() => {
+    const fetchPrescriptions = async () => {
+      try {
+        const response = await fetch(`${BACKEND_URL}/api/prescriptions/patient/${user.id}`);
+        const data = await response.json();
+        if (response.ok) {
+          setDbPrescriptions(data);
+        }
+      } catch (error) {
+        console.error("Error fetching patient prescriptions:", error);
+      }
+    };
+    
+    // Add navigation listener to refresh on focus if navigation prop is available
+    if (navigation) {
+      const unsubscribe = navigation.addListener('focus', () => {
+        fetchPrescriptions();
+      });
+      return unsubscribe;
+    } else {
+      fetchPrescriptions();
+    }
+  }, [navigation, user.id]);
 
   const renderPrescription = ({ item }) => (
     <View style={styles.prescriptionCard}>
       <View style={styles.headerRow}>
         <Ionicons name="document-text-outline" size={24} color="#180991" />
         <View style={styles.headerInfo}>
-          <Text style={styles.doctorName}>Prescribed by {item.doctorName}</Text>
+          <Text style={styles.doctorName}>Prescribed by {item.doctor?.fullName || "Doctor"}</Text>
           <Text style={styles.date}>{item.date}</Text>
         </View>
       </View>
@@ -51,7 +73,7 @@ const PrescriptionScreen = () => {
       </View>
 
       <FlatList
-        data={patientPrescriptions}
+        data={dbPrescriptions}
         keyExtractor={(item) => item.id}
         renderItem={renderPrescription}
         contentContainerStyle={styles.listContent}

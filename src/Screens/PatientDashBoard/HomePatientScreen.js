@@ -1,4 +1,4 @@
-import React, { useContext, useMemo } from "react";
+import React, { useContext, useMemo, useState } from "react";
 import { View, Text, ScrollView, StyleSheet, SafeAreaView, TextInput, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { UserContext } from "../../store/context/UserContext";
@@ -7,20 +7,42 @@ import QuickActionButton from "../../Components/PatientComponent/QuickActionButt
 import MedicationCard from "../../Components/PatientComponent/MedicationCard";
 
 const HomePatientScreen = ({ navigation }) => {
-  const { user, appointments, prescriptions } = useContext(UserContext);
+  const { user } = useContext(UserContext); // Removed prescriptions from context
+  const [dbAppointments, setDbAppointments] = useState([]);
+  const [dbPrescriptions, setDbPrescriptions] = useState([]);
+
+  const BACKEND_URL = "https://orange-poems-find.loca.lt";
+
+  // Fetch appointments and prescriptions from database
+  React.useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const appRes = await fetch(`${BACKEND_URL}/api/appointments/${user.id}`);
+        if (appRes.ok) setDbAppointments(await appRes.json());
+
+        const presRes = await fetch(`${BACKEND_URL}/api/prescriptions/patient/${user.id}`);
+        if (presRes.ok) setDbPrescriptions(await presRes.json());
+      } catch (error) {
+        console.error("Error fetching home data:", error);
+      }
+    };
+    // Fetch when screen comes into focus using navigation listener
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchData();
+    });
+    return unsubscribe;
+  }, [navigation, user.id]);
 
   // Extract medications from patient's prescriptions
-  const dailyMedications = prescriptions
-    .filter(prescription => prescription.patientName === user.fullName)
-    .flatMap(prescription => prescription.medications);
+  const dailyMedications = dbPrescriptions.flatMap(prescription => prescription.medications);
 
   // --- Logic for Upcoming Appointment ---
   const today = new Date().toISOString().split("T")[0];
 
   // Sort appointments by date
   const sortedAppointments = useMemo(() => {
-    return [...appointments].sort((a, b) => new Date(a.date) - new Date(b.date));
-  }, [appointments]);
+    return [...dbAppointments].sort((a, b) => new Date(a.date) - new Date(b.date));
+  }, [dbAppointments]);
 
   // Find the next upcoming appointment (including today)
   const upcomingAppointment = sortedAppointments.find(
@@ -63,7 +85,7 @@ const HomePatientScreen = ({ navigation }) => {
         {upcomingAppointment ? (
           <AppointmentCard
             title="Upcoming Appointment"
-            doctor={upcomingAppointment.doctorName}
+            doctor={upcomingAppointment.doctor?.fullName || "Unknown"}
             date={upcomingAppointment.date}
             time={upcomingAppointment.time}
             status={upcomingAppointment.status}

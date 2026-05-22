@@ -13,26 +13,47 @@ import { UserContext } from '../../store/context/UserContext';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 
+const BACKEND_URL = "https://orange-poems-find.loca.lt";
+
 const AddPrescriptionScreen = ({ navigation, route }) => {
-  const { user, appointments, addPrescription } = useContext(UserContext);
+  const { user } = useContext(UserContext); // Removed appointments and addPrescription from context
   const { patientName } = route.params || {};
 
-  // Get unique patients for this doctor
-  const doctorPatients = Array.from(
-    new Set(
-      appointments
-        .filter(app => app.doctorName === user.fullName)
-        .map(app => app.patientName)
-    )
-  );
-
+  const [doctorPatients, setDoctorPatients] = useState([]);
   const [selectedPatient, setSelectedPatient] = useState(patientName || '');
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Fetch unique patients from appointments API
+  React.useEffect(() => {
+    const fetchPatients = async () => {
+      try {
+        const response = await fetch(`${BACKEND_URL}/api/appointments/${user.id}`);
+        const data = await response.json();
+        if (response.ok) {
+          // Extract unique patient objects
+          const patientsMap = new Map();
+          data.forEach(app => {
+            if (app.patient && !patientsMap.has(app.patient.id)) {
+              patientsMap.set(app.patient.id, app.patient);
+            }
+          });
+          setDoctorPatients(Array.from(patientsMap.values()));
+        }
+      } catch (error) {
+        console.error("Error fetching patients for prescription:", error);
+      }
+    };
+    fetchPatients();
+  }, [user.id]);
 
   React.useEffect(() => {
     if (patientName) {
-      setSelectedPatient(patientName);
+      // Find the patient ID by name if patientName was passed
+      const match = doctorPatients.find(p => p.fullName === patientName);
+      if (match) setSelectedPatient(match.id);
     }
-  }, [patientName]);
+  }, [patientName, doctorPatients]);
+
   const [medications, setMedications] = useState([
     {
       name: '',
@@ -67,7 +88,7 @@ const AddPrescriptionScreen = ({ navigation, route }) => {
     setMedications(newMedications);
   };
 
-  const handleSavePrescription = () => {
+  const handleSavePrescription = async () => {
     // Validation
     if (!selectedPatient) {
       Alert.alert('Error', 'Please select a patient');
@@ -83,27 +104,39 @@ const AddPrescriptionScreen = ({ navigation, route }) => {
       return;
     }
 
+    setIsLoading(true);
+
     // Convert times string to array
     const formattedMedications = medications.map(med => ({
       ...med,
       times: med.times.split(',').map(t => t.trim())
     }));
 
-    const prescription = {
-      id: `p${Date.now()}`,
-      doctorName: user.fullName,
-      patientName: selectedPatient,
-      date: new Date().toISOString().split('T')[0],
-      medications: formattedMedications
-    };
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/prescriptions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          doctorId: user.id,
+          patientId: selectedPatient, // selectedPatient is now the patient ID
+          date: new Date().toISOString().split('T')[0],
+          medications: formattedMedications
+        })
+      });
 
-    addPrescription(prescription);
-    Alert.alert('Success', 'Prescription added successfully', [
-      {
-        text: 'OK',
-        onPress: () => navigation.goBack()
+      if (response.ok) {
+        Alert.alert('Success', 'Prescription added successfully', [
+          { text: 'OK', onPress: () => navigation.navigate("Home") }
+        ]);
+      } else {
+        Alert.alert('Error', 'Failed to save prescription.');
       }
-    ]);
+    } catch (error) {
+      console.error("Prescription API Error:", error);
+      Alert.alert('Error', 'Network error while saving prescription.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -125,7 +158,7 @@ const AddPrescriptionScreen = ({ navigation, route }) => {
             >
               <Picker.Item label="Choose a patient..." value="" />
               {doctorPatients.map((patient, index) => (
-                <Picker.Item key={index} label={patient} value={patient} />
+                <Picker.Item key={index} label={patient.fullName} value={patient.id} />
               ))}
             </Picker>
           </View>

@@ -1,4 +1,6 @@
-import React, { createContext, useState } from "react";
+import React, { createContext, useState, useEffect } from "react";
+import { auth } from "../../firebase/firebaseConfig";
+import { onAuthStateChanged } from "firebase/auth";
 
 // Context create
 export const UserContext = createContext();
@@ -25,6 +27,38 @@ export const UserProvider = ({ children }) => {
     age: "",
     medicalHistory: "",
   });
+
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const BACKEND_URL = "https://orange-poems-find.loca.lt";
+
+  // Auto-login logic (Session Persistence)
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        try {
+          // Fetch user details from our PostgreSQL backend using firebase ID
+          const response = await fetch(`${BACKEND_URL}/api/user/${firebaseUser.uid}`);
+          const userData = await response.json();
+          if (response.ok && userData) {
+            setUser({
+              ...userData,
+              password: "" // Don't store password in context
+            });
+          }
+        } catch (error) {
+          console.error("Auto-login error:", error);
+        } finally {
+          setIsAuthLoading(false);
+        }
+      } else {
+        // User is logged out
+        setUser({ fullName: "", role: "" }); // Reset state
+        setIsAuthLoading(false);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const [appointments, setAppointments] = useState([
     {
@@ -182,29 +216,35 @@ export const UserProvider = ({ children }) => {
     setDoctors((prev) => [...prev, doctor]);
   };
 
-  const logout = () => {
-    setUser({
-      fullName: "",
-      userName: "",
-      gender: "",
-      role: "",
-      cnic: "",
-      contactNumber: "",
-      address: "",
-      password: "",
-      specialization: "",
-      licenseNo: "",
-      age: "",
-      medicalHistory: "",
-    });
-    // setAppointments([]); // Modified: Persist appointments for demo flow
-    setMedications([]);
+  const logout = async () => {
+    try {
+      const { signOut } = require("firebase/auth");
+      await signOut(auth);
+      setUser({
+        fullName: "",
+        userName: "",
+        gender: "",
+        role: "",
+        cnic: "",
+        contactNumber: "",
+        address: "",
+        password: "",
+        specialization: "",
+        licenseNo: "",
+        age: "",
+        medicalHistory: "",
+      });
+      setMedications([]);
+    } catch (error) {
+      console.error("Logout Error:", error);
+    }
   };
 
   return (
     <UserContext.Provider
       value={{
         user,
+        isAuthLoading,
         appointments,
         medications,
         prescriptions,

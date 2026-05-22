@@ -5,17 +5,15 @@
 export const getTodaySchedule = (medications) => {
     const schedule = [];
     medications.forEach((med) => {
-        if (med.active) {
-            med.times.forEach((time) => {
-                schedule.push({
-                    time,
-                    medicineName: med.name,
-                    dosage: med.dosage,
-                    instructions: med.instructions,
-                    duration: med.duration,
-                });
+        med.times.forEach((time) => {
+            schedule.push({
+                time,
+                medicineName: med.name,
+                dosage: med.dosage,
+                instructions: med.instructions,
+                duration: med.duration,
             });
-        }
+        });
     });
 
     return schedule.sort((a, b) => a.time.localeCompare(b.time));
