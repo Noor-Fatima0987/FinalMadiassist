@@ -3,7 +3,7 @@ import { StyleSheet, Text, View, FlatList, SafeAreaView } from 'react-native';
 import { UserContext } from '../../store/context/UserContext';
 import { Ionicons } from '@expo/vector-icons';
 
-const BACKEND_URL = "https://orange-poems-find.loca.lt";
+const BACKEND_URL = "http://192.168.1.6:5000";
 
 const PrescriptionScreen = ({ navigation }) => {
   const { user } = useContext(UserContext); // Removed prescriptions from context

@@ -1,5 +1,6 @@
-import React from "react";
-import { View, Text, TextInput, StyleSheet } from "react-native";
+import React, { useState } from "react";
+import { View, Text, TextInput, StyleSheet, Pressable } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { moderateScale, platformFont } from "../../utils/responsive";
 
 export default function InputField({
@@ -12,23 +13,38 @@ export default function InputField({
   secureTextEntry,
   error,
   keyboardType,
+  maxLength,
 }) {
+  const [isSecure, setIsSecure] = useState(secureTextEntry);
+
   return (
     <View style={styles.container}>
       <Text style={styles.label}>
         {label}
         {required && <Text style={styles.required}> *</Text>}
       </Text>
-      <TextInput
-        placeholder={placeholder}
-        placeholderTextColor="#2c1ca4ff"
-        style={[styles.input, multiline && { height: moderateScale(80) }]}
-        value={value}
-        onChangeText={onChange}
-        secureTextEntry={secureTextEntry}
-        multiline={multiline}
-        keyboardType={keyboardType}
-      />
+      <View style={[styles.inputWrapper, multiline && { height: moderateScale(80) }]}>
+        <TextInput
+          placeholder={placeholder}
+          placeholderTextColor="#2c1ca4ff"
+          style={[styles.input, multiline && { height: "100%" }]}
+          value={value}
+          onChangeText={onChange}
+          secureTextEntry={isSecure}
+          multiline={multiline}
+          keyboardType={keyboardType}
+          maxLength={maxLength}
+        />
+        {secureTextEntry && (
+          <Pressable onPress={() => setIsSecure(!isSecure)} style={styles.iconContainer}>
+            <Ionicons
+              name={isSecure ? "eye-off-outline" : "eye-outline"}
+              size={moderateScale(20)}
+              color="#180991ff"
+            />
+          </Pressable>
+        )}
+      </View>
       {error && <Text style={styles.error}>{error}</Text>}
     </View>
   );
@@ -43,13 +59,22 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   required: { color: "red" },
-  input: {
+  inputWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
     borderWidth: 1,
     borderColor: "#ccc",
     borderRadius: moderateScale(10),
-    padding: moderateScale(12),
+    paddingHorizontal: moderateScale(12),
+  },
+  input: {
+    flex: 1,
+    paddingVertical: moderateScale(12),
     fontSize: platformFont(moderateScale(16)),
     color: "#180991ff",
+  },
+  iconContainer: {
+    padding: moderateScale(4),
   },
   error: {
     color: "red",

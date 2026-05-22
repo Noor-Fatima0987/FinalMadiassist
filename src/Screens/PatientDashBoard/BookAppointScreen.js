@@ -22,7 +22,7 @@ const BookAppointmentScreen = ({ navigation }) => {
   const [contact, setContact] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
 
-  const BACKEND_URL = "https://orange-poems-find.loca.lt";
+  const BACKEND_URL = "http://192.168.1.6:5000";
 
   const [isLoading, setIsLoading] = useState(false);
 

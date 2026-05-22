@@ -28,7 +28,7 @@ const RemainderScreen = () => {
   const [medModalVisible, setMedModalVisible] = useState(false);
   const [scheduleModalVisible, setScheduleModalVisible] = useState(false);
 
-  const BACKEND_URL = "https://orange-poems-find.loca.lt";
+  const BACKEND_URL = "http://192.168.1.6:5000";
 
   // Fetch prescriptions from DB
   useEffect(() => {

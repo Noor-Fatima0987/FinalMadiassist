@@ -15,11 +15,29 @@ export default function ProfileScreen({ navigation }) {
         if (!value) return null;
         if (["password", "id", "firebaseId", "createdAt", "updatedAt"].includes(key)) return null;
 
+        // Handling nested Doctor Profile object
+        if (key === "doctorProfile" && typeof value === "object") {
+          return Object.entries(value).map(([subKey, subValue]) => {
+            if (!subValue) return null;
+            if (["id", "userId", "createdAt", "updatedAt"].includes(subKey)) return null;
+            return (
+              <ProfileField
+                key={subKey}
+                label={subKey.charAt(0).toUpperCase() + subKey.slice(1)}
+                value={subValue.toString()}
+              />
+            );
+          });
+        }
+
+        // Safeguard against rendering other objects directly
+        if (typeof value === "object") return null;
+
         return (
           <ProfileField
             key={key}
             label={key.charAt(0).toUpperCase() + key.slice(1)}
-            value={value}
+            value={value.toString()}
           />
         );
       })}

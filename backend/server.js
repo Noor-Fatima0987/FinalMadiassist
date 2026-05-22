@@ -33,7 +33,7 @@ app.get('/api/test', (req, res) => {
 // Signup Route
 app.post('/api/signup', async (req, res) => {
   console.log("Signup attempt for:", req.body.email);
-  const { firebaseId, email, fullName, role, specialization, age, medicalHistory } = req.body;
+  const { firebaseId, email, fullName, role, specialization, age, medicalHistory, contactNumber, cnic, gender, address } = req.body;
 
   try {
     const newUser = await prisma.user.create({
@@ -42,14 +42,25 @@ app.post('/api/signup', async (req, res) => {
         email,
         fullName,
         role: role.toUpperCase(),
+        contactNumber,
+        cnic,
+        gender,
+        address,
         doctorProfile: role.toLowerCase() === 'doctor' ? {
           create: {
             specialty: specialization || 'General',
           }
         } : undefined,
+        patientProfile: role.toLowerCase() === 'patient' ? {
+          create: {
+            age: age ? parseInt(age) : null,
+            medicalHistory: medicalHistory || '',
+          }
+        } : undefined,
       },
       include: {
-        doctorProfile: true
+        doctorProfile: true,
+        patientProfile: true
       }
     });
 
@@ -67,12 +78,71 @@ app.get('/api/user/:firebaseId', async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
       where: { firebaseId },
-      include: { doctorProfile: true }
+      include: { doctorProfile: true, patientProfile: true }
     });
     if (!user) return res.status(404).json({ error: 'User not found in Database' });
     res.json(user);
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Update User Profile Route (Edit Profile)
+app.put('/api/user/:firebaseId', async (req, res) => {
+  const { firebaseId } = req.params;
+  const { fullName, email, contactNumber, cnic, gender, address, role, doctorProfile, patientProfile } = req.body;
+  
+  try {
+    const user = await prisma.user.findUnique({ where: { firebaseId } });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const safeParseInt = (val) => {
+      const parsed = parseInt(val);
+      return isNaN(parsed) ? null : parsed;
+    };
+
+    const updatedUser = await prisma.user.update({
+      where: { firebaseId },
+      data: {
+        fullName,
+        contactNumber,
+        cnic,
+        gender,
+        address,
+        doctorProfile: user.role === 'DOCTOR' && doctorProfile ? {
+          upsert: {
+            create: { 
+              specialty: doctorProfile.specialty || 'General', 
+              experience: safeParseInt(doctorProfile.experience), 
+              bio: doctorProfile.bio || '' 
+            },
+            update: { 
+              specialty: doctorProfile.specialty, 
+              experience: safeParseInt(doctorProfile.experience), 
+              bio: doctorProfile.bio 
+            }
+          }
+        } : undefined,
+        patientProfile: user.role === 'PATIENT' && patientProfile ? {
+          upsert: {
+            create: { 
+              age: safeParseInt(patientProfile.age), 
+              medicalHistory: patientProfile.medicalHistory || '' 
+            },
+            update: { 
+              age: safeParseInt(patientProfile.age), 
+              medicalHistory: patientProfile.medicalHistory 
+            }
+          }
+        } : undefined,
+      },
+      include: { doctorProfile: true, patientProfile: true }
+    });
+    
+    res.json(updatedUser);
+  } catch (error) {
+    console.error("Update Profile Error:", error);
+    res.status(500).json({ error: 'Failed to update profile', details: error.message });
   }
 });
 

@@ -11,7 +11,7 @@ const HomePatientScreen = ({ navigation }) => {
   const [dbAppointments, setDbAppointments] = useState([]);
   const [dbPrescriptions, setDbPrescriptions] = useState([]);
 
-  const BACKEND_URL = "https://orange-poems-find.loca.lt";
+  const BACKEND_URL = "http://192.168.1.6:5000";
 
   // Fetch appointments and prescriptions from database
   React.useEffect(() => {

@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, SafeAreaView, Pressable } from 'rea
 import { UserContext } from '../../store/context/UserContext';
 import { Ionicons } from '@expo/vector-icons';
 
-const BACKEND_URL = "https://orange-poems-find.loca.lt";
+const BACKEND_URL = "http://192.168.1.6:5000";
 
 const HomeDoctorScreen = ({ navigation }) => {
   const { user } = useContext(UserContext); // Removed appointments from context

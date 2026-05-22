@@ -151,3 +151,64 @@ Humne app ko mazeed behtar banane ke liye aur user ke masail ko hal karne ke liy
    - **Modal (Window):** Humne `PatientsList.js` mein system banaya ke jab doctor kisi patient ke card par click karega toh ek window khulegi.
    - Us window mein patient ka record, bemari aur purani dawaiyan (prescriptions) nazar aayengi.
    - **Delete Button:** Har prescription ke sath humne 🗑️ (Delete) ka button lagaya. Backend par humne `app.delete('/api/prescriptions/:id')` ka rasta banaya. Ab doctor ghalat likhi gayi dawai ko delete kar sakta hai.
+
+---
+
+## 12. Signup Screen Inputs mein Mazeed Behtariyan (Limits, Selector & Password Toggle)
+
+Humne Signup Form ko mazeed professional aur easy-to-use banane ke liye 3 baray badlao (changes) kiye hain:
+
+**Kese kiya (Step-by-Step):**
+
+1. **Phone Number aur CNIC par Digits ki Limit (maxLength):**
+   - **Masla:** Pehle user contact number ya CNIC likhte waqt jitne marzi digits type kar sakta tha, jis se ghalti ke chances hotay thay.
+   - **Hal:** Humne `InputField.js` ko update kar ke `maxLength` ki support di. Phir `SignUpScreen.js` mein:
+     - **Contact Number** ke liye `maxLength: 11` kar diya.
+     - **CNIC** ke liye `maxLength: 13` kar diya.
+     - **Doctor License Number** ke liye `maxLength: 15` kar diya.
+     - Ab user in fields mein limit se ziyada type nahi kar sakta.
+
+2. **Gender Selector (Dropdown Selection Modal):**
+   - **Masla:** Pehle gender field mein user ko khud type karna parta tha, jis se ghalat spellings ya be-tuke words type ho sakte thay.
+   - **Hal:** Humne `GenderSelector.js` naam ka ek naya component banaya. Ab jab user gender par click karta hai, toh ek professional Modal (dropdown window) open hoti hai jis mein 3 auto options aate hain:
+     - **Male**
+     - **Female**
+     - **Rather not say**
+     - User in mein se koi ek select karta hai, aur spelling ki ghalti ka sawal hi paida nahi hota.
+
+3. **Password Show/Hide Toggle (Aankh wala Button):**
+   - **Masla:** Pehle password likhte waqt sirf dot (dots) nazar aate thay. User ko confirm nahi hota tha ke usne kya type kiya hai.
+   - **Hal:** Humne `InputField.js` mein `Ionicons` (eyeball icons) ka use kiya.
+     - Password aur Confirm Password fields ke andar right side par ek aankh (Eye 👁️) ka icon laga diya.
+     - Jab user aankh par click karta hai toh password show ho jata hai, aur dobara click karne se hide ho jata hai. Yeh bilkul standard aur modern apps ki tarah kaam karta hai.
+
+---
+
+## 13. Complete Database Sync aur Editable Profile Screen
+
+**Kya kiya:** Pehle sirf Full Name aur Email database mein save hota tha. Ab humne database ko bara kiya hai taake contact number, CNIC, address, age waghera bhi save hon aur in sab ko Profile screen par edit kiya ja sake.
+
+**Kese kiya (Step-by-Step):**
+
+1. **Database Schema Upgrade (`schema.prisma`):**
+   - **Naye Fields:** Humne `User` table ke andar `contactNumber`, `cnic`, `gender`, aur `address` shamil kiya.
+   - **PatientProfile Table:** Jaise Doctor ki details ke liye `DoctorProfile` tha, waise hi humne `PatientProfile` banaya jis mein `age` aur `medicalHistory` save hoti hai.
+   - Uske baad `npx prisma db push` chala kar in tabdeeliyon ko PostgreSQL cloud par upload kar diya.
+
+2. **Backend API Update (`server.js`):**
+   - **Signup Route Update:** `POST /api/signup` mein code update kiya gaya taake naye fields database mein bhi jayen.
+   - **Update API (Naya Rasta):** Ek bilkul naya route banaya: `PUT /api/user/:firebaseId`. Yeh isliye banaya hai taake jab aap mobile se profile change karein, toh yeh backend usay database mein hamesha ke liye modify kar de.
+
+3. **Frontend: Professional "Edit Profile" Screen (`EditableProfileScreen.js`):**
+   - **Clean UI:** Random aur system generated numbers (jaise `firebaseId`, `id`, `createdAt`) ko mukammal hide kar diya gaya. Patient ya Doctor ko inki zaroorat nahi hoti.
+   - **Specific Tarteeb (Order):** Fields ko ab ek behtareen tarteeb mein dikhaya jata hai:
+     - Pehle **Full Name**
+     - Phir **Email** (read-only)
+     - **Phone Number**
+     - **Gender**, **Address**, **CNIC**
+     - **Role** (read-only)
+     - Aakhir mein role ke hisab se (Doctor ke liye Specialty aur Experience, Patient ke liye Age aur Medical History).
+   - **API Connection:** "Save" button par tap karte hi ab sirf app ke andar data change nahi hota, balke backend ki API call (`fetch PUT`) hit hoti hai jo database update karti hai. Save hone tak loading ghoomti hai aur phir success message aata hai.
+
+**Is se app heavy toh nahi hui?**
+Bilkul nahi! Data mobile memory mein nahi balke hamare Supabase (cloud database) par mehfooz ho raha hai. App ka size wahi chota aur performance super-fast hi rahegi.

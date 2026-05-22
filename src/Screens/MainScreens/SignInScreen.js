@@ -9,7 +9,7 @@ import { signInWithEmailAndPassword } from "firebase/auth";
 import { UserContext } from "../../store/context/UserContext";
 import { moderateScale, platformFont } from "../../utils/responsive";
 
-const BACKEND_URL = "https://orange-poems-find.loca.lt"; // Localtunnel URL
+const BACKEND_URL = "http://192.168.1.6:5000"; // Localtunnel URL
 
 export default function SignInScreen({ navigation }) {
   const { saveUser } = useContext(UserContext);

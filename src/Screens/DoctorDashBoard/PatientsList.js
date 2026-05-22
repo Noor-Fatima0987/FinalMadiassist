@@ -4,7 +4,7 @@ import { UserContext } from '../../store/context/UserContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 
-const BACKEND_URL = "https://orange-poems-find.loca.lt";
+const BACKEND_URL = "http://192.168.1.6:5000";
 
 const PatientsList = () => {
   const navigation = useNavigation();

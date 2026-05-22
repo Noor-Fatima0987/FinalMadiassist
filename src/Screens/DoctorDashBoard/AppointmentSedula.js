@@ -3,7 +3,7 @@ import React, { useContext, useMemo, useState, useEffect } from 'react';
 import { UserContext } from '../../store/context/UserContext';
 import { Ionicons } from '@expo/vector-icons';
 
-const BACKEND_URL = "https://orange-poems-find.loca.lt";
+const BACKEND_URL = "http://192.168.1.6:5000";
 
 function AppointmentSedula({ navigation }) {
   const { user } = useContext(UserContext); // Removed appointments from context

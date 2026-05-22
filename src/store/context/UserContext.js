@@ -29,7 +29,7 @@ export const UserProvider = ({ children }) => {
   });
 
   const [isAuthLoading, setIsAuthLoading] = useState(true);
-  const BACKEND_URL = "https://orange-poems-find.loca.lt";
+  const BACKEND_URL = "http://192.168.1.6:5000";
 
   // Auto-login logic (Session Persistence)
   useEffect(() => {

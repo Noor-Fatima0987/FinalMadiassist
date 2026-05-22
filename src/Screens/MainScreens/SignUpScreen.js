@@ -2,6 +2,7 @@ import React, { useState, useContext } from "react";
 import { View, Text, FlatList, StyleSheet, KeyboardAvoidingView, Platform } from "react-native";
 import InputField from "../../Components/SigiUpComponent/InputField";
 import RoleSelector from "../../Components/SigiUpComponent/RoleSelector";
+import GenderSelector from "../../Components/SigiUpComponent/GenderSelector";
 import SubmitButton from "../../Components/SigiUpComponent/SubmitButton";
 import SignInLink from "../../Components/SigiUpComponent/SignInLink";
 import { auth } from "../../firebase/firebaseConfig";
@@ -9,7 +10,7 @@ import { createUserWithEmailAndPassword } from "firebase/auth";
 import { UserContext } from "../../store/context/UserContext";
 import { moderateScale, platformFont } from "../../utils/responsive";
 
-const BACKEND_URL = "https://orange-poems-find.loca.lt"; // Localtunnel URL
+const BACKEND_URL = "http://192.168.1.6:5000"; // Localtunnel URL
 
 export default function SignUpScreen({ navigation }) {
   const { saveUser, addDoctor } = useContext(UserContext);
@@ -54,6 +55,7 @@ export default function SignUpScreen({ navigation }) {
     else if (cnic.length !== 13) newErrors.cnic = "CNIC must be 13 digits";
 
     if (!role.trim()) newErrors.role = "Please select your role";
+    if (!gender.trim()) newErrors.gender = "Please select your gender";
 
     if (!password.trim()) newErrors.password = "Password is required";
     else if (password.length < 8) newErrors.password = "Password must be at least 8 characters";
@@ -84,7 +86,8 @@ export default function SignUpScreen({ navigation }) {
             role,
             specialization,
             age,
-            medicalHistory
+            medicalHistory,
+            gender
           }),
         });
 
@@ -111,10 +114,10 @@ export default function SignUpScreen({ navigation }) {
     { id: "fullName", label: "Full Name", value: fullName, onChange: setFullName, placeholder: "Enter your full name", required: true },
     { id: "userName", label: "Username", value: userName, onChange: setUserName, placeholder: "Enter your username" },
     { id: "email", label: "Email", value: email, onChange: setEmail, placeholder: "Enter your email", required: true, keyboardType: "email-address" },
-    { id: "contactNumber", label: "Contact Number", value: contactNumber, onChange: setContactNumber, placeholder: "Enter your contact number", required: true, keyboardType: "numeric" },
-    { id: "gender", label: "Gender", value: gender, onChange: setGender, placeholder: "Enter your gender" },
+    { id: "contactNumber", label: "Contact Number", value: contactNumber, onChange: setContactNumber, placeholder: "Enter your contact number", required: true, keyboardType: "numeric", maxLength: 11 },
+    { id: "gender", label: "Gender", value: gender, onChange: setGender, required: true, type: "gender" },
     { id: "role", label: "Select Role", value: role, onChange: setRole, required: true, type: "role" },
-    { id: "cnic", label: "CNIC", value: cnic, onChange: setCnic, placeholder: "Enter your CNIC (without dashes)", required: true, keyboardType: "numeric" },
+    { id: "cnic", label: "CNIC", value: cnic, onChange: setCnic, placeholder: "Enter your CNIC (without dashes)", required: true, keyboardType: "numeric", maxLength: 13 },
     { id: "address", label: "Address", value: address, onChange: setAddress, placeholder: "Enter your address", required: true, multiline: true },
     { id: "password", label: "Password", value: password, onChange: setPassword, placeholder: "Enter your password", required: true, secureTextEntry: true },
     { id: "confirmPassword", label: "Confirm Password", value: confirmPassword, onChange: setConfirmPassword, placeholder: "Re-enter your password", required: true, secureTextEntry: true },
@@ -124,7 +127,7 @@ export default function SignUpScreen({ navigation }) {
   if (role === "doctor") {
     const doctorFields = [
       { id: "specialization", label: "Specialization", value: specialization, onChange: setSpecialization, placeholder: "Enter your specialization", required: true },
-      { id: "licenseNo", label: "License Number", value: licenseNo, onChange: setLicenseNo, placeholder: "Enter your license number", required: true }
+      { id: "licenseNo", label: "License Number", value: licenseNo, onChange: setLicenseNo, placeholder: "Enter your license number", required: true, maxLength: 15 }
     ];
     formFields.splice(6, 0, ...doctorFields);
   } else if (role === "patient") {
@@ -149,6 +152,7 @@ export default function SignUpScreen({ navigation }) {
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => {
             if (item.type === "role") return <RoleSelector role={role} setRole={setRole} error={errors.role} />;
+            if (item.type === "gender") return <GenderSelector gender={gender} setGender={setGender} error={errors.gender} />;
             return (
               <InputField
                 key={item.id}
@@ -160,6 +164,7 @@ export default function SignUpScreen({ navigation }) {
                 secureTextEntry={item.secureTextEntry}
                 error={errors[item.id]}
                 keyboardType={item.keyboardType}
+                maxLength={item.maxLength}
               />
             );
           }}

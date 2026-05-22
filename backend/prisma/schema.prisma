@@ -7,14 +7,22 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  firebaseId String?  @unique // To link with Firebase Auth later
-  email     String   @unique
-  fullName  String
-  role      Role     @default(PATIENT)
+  id            String   @id @default(uuid())
+  firebaseId    String?  @unique // To link with Firebase Auth later
+  email         String   @unique
+  fullName      String
+  role          Role     @default(PATIENT)
+  
+  // New profile fields
+  contactNumber String?
+  cnic          String?
+  gender        String?
+  address       String?
   
   // Relations
   doctorProfile    DoctorProfile?
+  patientProfile   PatientProfile?
+  
   appointmentsAsPatient Appointment[] @relation("PatientAppointments")
   appointmentsAsDoctor  Appointment[] @relation("DoctorAppointments")
   
@@ -34,6 +42,16 @@ model DoctorProfile {
   // Relation back to User
   userId     String   @unique
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PatientProfile {
+  id             String   @id @default(uuid())
+  age            Int?
+  medicalHistory String?
+  
+  // Relation back to User
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Appointment {
