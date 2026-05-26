@@ -39,10 +39,11 @@ export async function registerForPushNotificationsAsync() {
             return;
         }
         try {
-            token = (await Notifications.getExpoPushTokenAsync()).data;
-            console.log(token);
+            token = (await Notifications.getExpoPushTokenAsync({ projectId: 'dummy-project-id' })).data;
+            // console.log(token);
         } catch (e) {
-            console.log('Error getting expo push token', e);
+            // Harmless error: We only need local notifications, so we can ignore remote push token setup errors.
+            // console.log('Error getting expo push token', e);
         }
     } else {
         console.log('Must use physical device for Push Notifications');
@@ -59,7 +60,14 @@ export async function registerForPushNotificationsAsync() {
  * @returns {Promise<string>} invitationId
  */
 export async function scheduleMedicationReminder(medicineName, dosage, timeStr) {
-    const [hours, minutes] = timeStr.split(':').map(Number);
+    const cleanTime = (timeStr || "00:00").replace(/[^0-9:]/g, "");
+    const [hoursStr, minutesStr] = cleanTime.split(':');
+    const hours = parseInt(hoursStr || "0", 10);
+    const minutes = parseInt(minutesStr || "0", 10);
+
+    // If parsing fails completely, fallback to current time + 1 min to prevent silent daemon crash
+    const finalHours = isNaN(hours) ? new Date().getHours() : hours;
+    const finalMinutes = isNaN(minutes) ? (new Date().getMinutes() + 1) % 60 : minutes;
 
     const id = await Notifications.scheduleNotificationAsync({
         content: {
@@ -69,8 +77,8 @@ export async function scheduleMedicationReminder(medicineName, dosage, timeStr) 
             sound: 'default',
         },
         trigger: {
-            hour: hours,
-            minute: minutes,
+            hour: finalHours,
+            minute: finalMinutes,
             repeats: true,
         },
     });
@@ -93,10 +101,21 @@ export async function cancelAllScheduledNotifications() {
 export async function syncNotificationsWithMedications(medications) {
     await cancelAllScheduledNotifications();
 
+    if (!Array.isArray(medications)) return;
+
     for (const med of medications) {
-        if (med.active) {
-            for (const time of med.times) {
-                await scheduleMedicationReminder(med.name, med.dosage, time);
+        const isActive = med.active !== false; // Default to true if undefined
+        if (isActive) {
+            // Safely iterate over times if it's an array, or string, or skip
+            let timesArray = [];
+            if (Array.isArray(med.times)) {
+                timesArray = med.times;
+            } else if (typeof med.times === 'string') {
+                timesArray = med.times.split(',').map(t => t.trim());
+            }
+
+            for (const time of timesArray) {
+                await scheduleMedicationReminder(med.name || 'Medicine', med.dosage || '', time);
             }
         }
     }

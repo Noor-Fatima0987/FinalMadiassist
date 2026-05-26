@@ -3,7 +3,7 @@ import React, { useContext, useMemo, useState, useEffect } from 'react';
 import { UserContext } from '../../store/context/UserContext';
 import { Ionicons } from '@expo/vector-icons';
 
-const BACKEND_URL = "http://192.168.1.6:5000";
+const BACKEND_URL = "https://mediassist-rho.vercel.app";
 
 function AppointmentSedula({ navigation }) {
   const { user } = useContext(UserContext); // Removed appointments from context
@@ -71,8 +71,8 @@ function AppointmentSedula({ navigation }) {
   };
 
   const renderAppointmentCard = ({ item }) => (
-    <View style={styles.card}>
-      <View style={styles.timeTag}>
+    <View style={[styles.card, item.status === "Completed" && styles.completedCard]}>
+      <View style={[styles.timeTag, item.status === "Completed" && styles.completedTimeTag]}>
         <Ionicons name="time-outline" size={16} color="#fff" />
         <Text style={styles.timeTagText}>{item.time}</Text>
       </View>
@@ -83,7 +83,9 @@ function AppointmentSedula({ navigation }) {
             <Text style={styles.avatarText}>{item.patient?.fullName?.charAt(0) || 'P'}</Text>
           </View>
           <View style={styles.patientInfo}>
-            <Text style={styles.patientName}>{item.patient?.fullName || "Unknown Patient"}</Text>
+            <Text style={[styles.patientName, item.status === "Completed" && styles.strikethroughText]}>
+              {item.patient?.fullName || "Unknown Patient"}
+            </Text>
             <Text style={styles.patientSub}>Status: {item.status}</Text>
           </View>
           <View style={[styles.statusBadge, item.status === "Completed" && { backgroundColor: "#e8f5e9" }]}>
@@ -317,6 +319,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#999',
     textAlign: 'center',
+  },
+  completedCard: {
+    opacity: 0.6,
+  },
+  completedTimeTag: {
+    backgroundColor: '#888',
+  },
+  strikethroughText: {
+    textDecorationLine: 'line-through',
+    color: '#888',
   },
 });
 

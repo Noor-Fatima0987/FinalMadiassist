@@ -22,7 +22,7 @@ const BookAppointmentScreen = ({ navigation }) => {
   const [contact, setContact] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
 
-  const BACKEND_URL = "http://192.168.1.6:5000";
+  const BACKEND_URL = "https://mediassist-rho.vercel.app";
 
   const [isLoading, setIsLoading] = useState(false);
 
@@ -59,6 +59,7 @@ const BookAppointmentScreen = ({ navigation }) => {
 
   // ---------------- CONFIRM LOGIC ----------------
   const handleConfirm = async () => {
+    if (isLoading) return; // Prevent double booking
     setIsLoading(true);
     try {
       const response = await fetch(`${BACKEND_URL}/api/appointments`, {

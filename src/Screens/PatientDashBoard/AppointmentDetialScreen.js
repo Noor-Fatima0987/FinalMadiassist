@@ -1,9 +1,9 @@
 import React, { useContext, useState, useEffect } from 'react';
-import { StyleSheet, Text, View, FlatList, SafeAreaView } from 'react-native';
+import { StyleSheet, Text, View, FlatList, SafeAreaView, Pressable } from 'react-native';
 import { UserContext } from '../../store/context/UserContext';
 import { Ionicons } from '@expo/vector-icons';
 
-const BACKEND_URL = "http://192.168.1.6:5000";
+const BACKEND_URL = "https://mediassist-rho.vercel.app";
 
 const AppointmentDetialScreen = () => {
   const { user } = useContext(UserContext); // Removed appointments from context

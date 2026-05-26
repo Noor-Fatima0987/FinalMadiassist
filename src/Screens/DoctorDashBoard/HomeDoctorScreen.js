@@ -1,9 +1,10 @@
 import React, { useContext, useMemo, useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { UserContext } from '../../store/context/UserContext';
 import { Ionicons } from '@expo/vector-icons';
 
-const BACKEND_URL = "http://192.168.1.6:5000";
+const BACKEND_URL = "https://mediassist-rho.vercel.app";
 
 const HomeDoctorScreen = ({ navigation }) => {
   const { user } = useContext(UserContext); // Removed appointments from context
@@ -16,7 +17,11 @@ const HomeDoctorScreen = ({ navigation }) => {
         const response = await fetch(`${BACKEND_URL}/api/appointments/${user.id}`);
         const data = await response.json();
         if (response.ok) {
-          setDbAppointments(data);
+          if (Array.isArray(data)) {
+            setDbAppointments(data);
+          } else {
+            setDbAppointments([]);
+          }
         }
       } catch (error) {
         console.error("Error fetching doctor appointments:", error);
@@ -43,8 +48,8 @@ const HomeDoctorScreen = ({ navigation }) => {
   );
 
   const pendingApps = useMemo(() =>
-    todayApps.filter(app => app.status !== 'Completed'),
-    [todayApps]
+    dbAppointments.filter(app => app.status === 'Pending'),
+    [dbAppointments]
   );
 
   return (
@@ -93,7 +98,7 @@ const HomeDoctorScreen = ({ navigation }) => {
             </View>
             <View style={styles.patientInfo}>
               <Text style={styles.patientName}>{pendingApps[0].patient?.fullName || "Patient"}</Text>
-              <Text style={styles.patientDetail}>Age: {pendingApps[0].patient?.age || "N/A"} • Consultation</Text>
+              <Text style={styles.patientDetail}>Age: {pendingApps[0].patient?.age || "N/A"} â€¢ Consultation</Text>
             </View>
             <Pressable style={styles.startBtn} onPress={() => navigation.navigate('Sedular')}>
               <Text style={styles.startBtnText}>Start</Text>

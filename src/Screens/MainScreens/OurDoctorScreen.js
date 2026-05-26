@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { View, Text, FlatList, StyleSheet } from "react-native";
 
-const BACKEND_URL = "http://192.168.1.6:5000";
+const BACKEND_URL = "https://mediassist-rho.vercel.app";
 
 function OurDoctorScreen() {
   const [dbDoctors, setDbDoctors] = useState([]);

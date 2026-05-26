@@ -212,3 +212,16 @@ Humne Signup Form ko mazeed professional aur easy-to-use banane ke liye 3 baray 
 
 **Is se app heavy toh nahi hui?**
 Bilkul nahi! Data mobile memory mein nahi balke hamare Supabase (cloud database) par mehfooz ho raha hai. App ka size wahi chota aur performance super-fast hi rahegi.
+
+---
+
+## 14. Vercel Deployment Configuration
+
+**Kya kiya:** Backend (Node.js API) ko Vercel par host karne ke liye code mein choti si tabdeeli ki taake isay "Serverless Function" banaya ja sakay, jabke local machine par bhi yeh pehle ki tarah chalta rahay.
+
+**Kese kiya:**
+1. **`vercel.json` banaya:** Ek nayi file banayi jo Vercel ko batati hai ke hamara `server.js` hi main file hai aur isay `@vercel/node` environment par chalana hai.
+2. **`server.js` update kiya:** 
+   - `app.listen()` ko ek `if (!process.env.VERCEL)` condition ke andar dal diya. Is se agar app Vercel par chale, toh woh manually port open karne ki koshish nahi karta.
+   - `module.exports = app;` add kiya taake Vercel is app ko apne serverless engine mein export kar sakay.
+3. **No Local Impact:** Is condition ki wajah se jab hum laptop par `node server.js` chalate hain toh error nahi aata, aur backend theek pichli martaba ki tarah 5000 port par start ho jata hai.

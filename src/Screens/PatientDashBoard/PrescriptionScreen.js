@@ -3,7 +3,7 @@ import { StyleSheet, Text, View, FlatList, SafeAreaView } from 'react-native';
 import { UserContext } from '../../store/context/UserContext';
 import { Ionicons } from '@expo/vector-icons';
 
-const BACKEND_URL = "http://192.168.1.6:5000";
+const BACKEND_URL = "https://mediassist-rho.vercel.app";
 
 const PrescriptionScreen = ({ navigation }) => {
   const { user } = useContext(UserContext); // Removed prescriptions from context
@@ -53,12 +53,22 @@ const PrescriptionScreen = ({ navigation }) => {
             <Text style={styles.medicationName}>{med.name}</Text>
           </View>
           <View style={styles.medicationDetails}>
-            <Text style={styles.detailText}>💊 Dosage: {med.dosage}</Text>
-            <Text style={styles.detailText}>📋 Instructions: {med.instructions}</Text>
-            <Text style={styles.detailText}>⏱️ Duration: {med.duration}</Text>
-            <Text style={styles.detailText}>
-              🕐 Times: {med.times.join(', ')}
-            </Text>
+            <View style={styles.detailRow}>
+              <Ionicons name="medical-outline" size={14} color="#555" />
+              <Text style={styles.detailText}>Dosage: {med.dosage}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Ionicons name="information-circle-outline" size={14} color="#555" />
+              <Text style={styles.detailText}>Instructions: {med.instructions}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Ionicons name="calendar-outline" size={14} color="#555" />
+              <Text style={styles.detailText}>Duration: {med.duration}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Ionicons name="time-outline" size={14} color="#555" />
+              <Text style={styles.detailText}>Times: {Array.isArray(med.times) ? med.times.join(', ') : med.times}</Text>
+            </View>
           </View>
         </View>
       ))}
@@ -179,7 +189,13 @@ const styles = StyleSheet.create({
   detailText: {
     fontSize: 13,
     color: '#555',
-    marginBottom: 4,
+    marginLeft: 6,
+    flex: 1,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 6,
   },
   emptyContainer: {
     marginTop: 100,

@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect } from "react";
+﻿import React, { createContext, useState, useEffect } from "react";
 import { auth } from "../../firebase/firebaseConfig";
 import { onAuthStateChanged } from "firebase/auth";
 
@@ -29,7 +29,7 @@ export const UserProvider = ({ children }) => {
   });
 
   const [isAuthLoading, setIsAuthLoading] = useState(true);
-  const BACKEND_URL = "http://192.168.1.6:5000";
+  const BACKEND_URL = "https://mediassist-rho.vercel.app";
 
   // Auto-login logic (Session Persistence)
   useEffect(() => {

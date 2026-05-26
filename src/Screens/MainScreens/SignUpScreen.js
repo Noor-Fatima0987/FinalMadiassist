@@ -10,7 +10,7 @@ import { createUserWithEmailAndPassword } from "firebase/auth";
 import { UserContext } from "../../store/context/UserContext";
 import { moderateScale, platformFont } from "../../utils/responsive";
 
-const BACKEND_URL = "http://192.168.1.6:5000"; // Localtunnel URL
+const BACKEND_URL = "https://mediassist-rho.vercel.app"; // Localtunnel URL
 
 export default function SignUpScreen({ navigation }) {
   const { saveUser, addDoctor } = useContext(UserContext);
@@ -96,8 +96,7 @@ export default function SignUpScreen({ navigation }) {
         if (response.ok) {
           alert("Account Created Successfully!");
           saveUser(result); // result is the user object itself
-          if (role === "doctor") navigation.navigate("Main Doctor");
-          else navigation.navigate("Main Patient");
+          // Conditional rendering in Navigation.js handles the screen switch automatically.
         } else {
           alert("Database error: " + result.error);
         }

@@ -1,4 +1,4 @@
-import React, { useContext, useMemo, useState } from "react";
+﻿import React, { useContext, useMemo, useState } from "react";
 import { View, Text, ScrollView, StyleSheet, SafeAreaView, TextInput, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { UserContext } from "../../store/context/UserContext";
@@ -11,7 +11,7 @@ const HomePatientScreen = ({ navigation }) => {
   const [dbAppointments, setDbAppointments] = useState([]);
   const [dbPrescriptions, setDbPrescriptions] = useState([]);
 
-  const BACKEND_URL = "http://192.168.1.6:5000";
+  const BACKEND_URL = "https://mediassist-rho.vercel.app";
 
   // Fetch appointments and prescriptions from database
   React.useEffect(() => {

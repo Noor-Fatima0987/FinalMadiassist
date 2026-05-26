@@ -1,10 +1,11 @@
 import React, { useContext, useState, useEffect, useMemo } from 'react';
-import { StyleSheet, Text, View, FlatList, SafeAreaView, TextInput, Pressable, Modal, ActivityIndicator, Alert } from 'react-native';
+import { StyleSheet, Text, View, FlatList, TextInput, Pressable, Modal, ActivityIndicator, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { UserContext } from '../../store/context/UserContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 
-const BACKEND_URL = "http://192.168.1.6:5000";
+const BACKEND_URL = "https://mediassist-rho.vercel.app";
 
 const PatientsList = () => {
   const navigation = useNavigation();
@@ -24,7 +25,11 @@ const PatientsList = () => {
         const response = await fetch(`${BACKEND_URL}/api/appointments/${user.id}`);
         const data = await response.json();
         if (response.ok) {
-          setDbAppointments(data);
+          if (Array.isArray(data)) {
+            setDbAppointments(data);
+          } else {
+            setDbAppointments([]);
+          }
         }
       } catch (error) {
         console.error("Error fetching doctor appointments:", error);
@@ -141,7 +146,7 @@ const PatientsList = () => {
         <Text style={styles.detailValue}>{item.age}</Text>
         <Pressable
           style={styles.prescribeIcon}
-          onPress={() => navigation.navigate('Add Prescription', { patientName: item.name })}
+          onPress={() => navigation.navigate('Main Doctor', { screen: 'Add Prescription', params: { patientName: item.name } })}
         >
           <Ionicons name="add-circle" size={24} color="#180991" />
           <Text style={styles.prescribeText}>Prescribe</Text>
@@ -228,8 +233,8 @@ const PatientsList = () => {
                     </View>
                     {item.medications?.map((med, index) => (
                       <View key={index} style={styles.medRow}>
-                        <Text style={styles.medName}>• {med.name}</Text>
-                        <Text style={styles.medDosage}>{med.dosage} ({med.times.join(', ')})</Text>
+                        <Text style={styles.medName}>- {med.name}</Text>
+                        <Text style={styles.medDosage}>{med.dosage} ({(Array.isArray(med.times) ? med.times.join(', ') : med.times) || 'No times'})</Text>
                       </View>
                     ))}
                   </View>
@@ -241,7 +246,7 @@ const PatientsList = () => {
               style={styles.addPrescriptionModalBtn}
               onPress={() => {
                 setModalVisible(false);
-                navigation.navigate('Add Prescription', { patientName: selectedPatient.name });
+                navigation.navigate('Main Doctor', { screen: 'Add Prescription', params: { patientName: selectedPatient.name } });
               }}
             >
               <Text style={styles.addPrescriptionModalText}>+ Write New Prescription</Text>

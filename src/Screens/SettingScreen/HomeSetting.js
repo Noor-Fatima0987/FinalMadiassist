@@ -1,12 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { View, ScrollView, StyleSheet } from "react-native";
 import ProfileOption from "../../Components/SettingComponent/ProfileOption";
 import NotificationToggle from "../../Components/SettingComponent/NotificationToggle";
 import AboutDropdown from "../../Components/SettingComponent/AboutDropdown";
 import LogoutButton from "../../Components/SettingComponent/LogoutButton";
+import { UserContext } from "../../store/context/UserContext";
 
 export default function HomeSetting({ navigation }) {
   const [notificationEnabled, setNotificationEnabled] = useState(false);
+  const { logout } = useContext(UserContext);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -23,10 +25,7 @@ export default function HomeSetting({ navigation }) {
       <AboutDropdown />
 
       {/* Logout */}
-      <LogoutButton onPress={() => navigation.reset({
-          index: 0,
-          routes: [{ name: "Home" }],
-       })} />
+      <LogoutButton onPress={() => logout()} />
     </ScrollView>
   );
 }

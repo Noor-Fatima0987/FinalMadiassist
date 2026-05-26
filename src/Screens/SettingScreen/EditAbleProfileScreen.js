@@ -1,11 +1,11 @@
-import React, { useContext, useState } from "react";
+﻿import React, { useContext, useState } from "react";
 import { View, Text, ScrollView, StyleSheet, Alert, ActivityIndicator } from "react-native";
 import { UserContext } from "../../store/context/UserContext";
 
 import EditableField from "../../Components/EditProfileComponent/EidtableField";
 import SaveButton from "../../Components/EditProfileComponent/SaveButton";
 
-const BACKEND_URL = "http://192.168.1.6:5000";
+const BACKEND_URL = "https://mediassist-rho.vercel.app";
 
 export default function EditableProfileScreen({ navigation }) {
   const { user, saveUser } = useContext(UserContext);

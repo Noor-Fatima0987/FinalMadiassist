@@ -27,7 +27,11 @@ app.use(express.json());
 
 // Test Route
 app.get('/api/test', (req, res) => {
-  res.json({ message: 'Backend is working and connected via Prisma 7 Adapter!' });
+  const dbUrl = process.env.DATABASE_URL || 'MISSING';
+  res.status(200).json({ 
+    message: 'Backend is working and connected via Prisma 7 Adapter!',
+    dbUrlPrefix: dbUrl.substring(0, 15)
+  });
 });
 
 // Signup Route
@@ -287,8 +291,13 @@ app.delete('/api/prescriptions/:id', async (req, res) => {
     res.status(500).json({ error: 'Prescription delete nahi ho saki' });
   }
 });
-// Start Server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server is running on http://0.0.0.0:${PORT}`);
-});
+// Start Server (Conditional for Vercel)
+if (!process.env.VERCEL) {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server is running on http://0.0.0.0:${PORT}`);
+  });
+}
+
+// Export for Vercel Serverless Functions
+module.exports = app;

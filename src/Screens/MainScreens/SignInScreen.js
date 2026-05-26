@@ -9,7 +9,7 @@ import { signInWithEmailAndPassword } from "firebase/auth";
 import { UserContext } from "../../store/context/UserContext";
 import { moderateScale, platformFont } from "../../utils/responsive";
 
-const BACKEND_URL = "http://192.168.1.6:5000"; // Localtunnel URL
+const BACKEND_URL = "https://mediassist-rho.vercel.app"; // Localtunnel URL
 
 export default function SignInScreen({ navigation }) {
   const { saveUser } = useContext(UserContext);
@@ -51,8 +51,7 @@ export default function SignInScreen({ navigation }) {
           }
 
           saveUser(result);
-          if (result.role === "DOCTOR") navigation.navigate("Main Doctor");
-          else navigation.navigate("Main Patient");
+          // Conditional rendering in Navigation.js handles the screen switch automatically.
         } else {
           alert("Error: " + result.error);
         }
@@ -83,8 +82,9 @@ export default function SignInScreen({ navigation }) {
           keyExtractor={(item) => item.key}
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => {
-            if (item.type === "role") return <RoleSelector role={role} setRole={setRole} error={errors.role} />;
-            return <InputField {...item} error={errors[item.key]} />;
+            const { key, type, ...restProps } = item;
+            if (type === "role") return <RoleSelector role={role} setRole={setRole} error={errors.role} />;
+            return <InputField key={key} {...restProps} error={errors[key]} />;
           }}
           ListFooterComponent={
             <>

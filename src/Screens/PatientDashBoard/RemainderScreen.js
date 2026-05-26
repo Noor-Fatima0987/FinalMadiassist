@@ -5,224 +5,243 @@ import {
   View,
   ScrollView,
   Pressable,
-  Modal,
-  SafeAreaView,
-  FlatList,
+  ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { UserContext } from '../../store/context/UserContext';
 import {
-  getNextReminder,
-  getTodaySchedule,
+  getTimelineSchedule,
   getMinutesUntil,
   formatTimeRemaining,
   formatTo12Hour,
 } from '../../utils/reminderUtils';
-import { syncNotificationsWithMedications } from '../../utils/notificationUtils';
+import { syncNotificationsWithMedications, registerForPushNotificationsAsync } from '../../utils/notificationUtils';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 
 const RemainderScreen = () => {
-  const { user } = useContext(UserContext); // Removed medications from context
+  const navigation = useNavigation();
+  const { user } = useContext(UserContext);
   const [medications, setMedications] = useState([]);
+  const [schedule, setSchedule] = useState([]);
   const [nextReminder, setNextReminder] = useState(null);
   const [timeUntil, setTimeUntil] = useState(0);
-  const [medModalVisible, setMedModalVisible] = useState(false);
-  const [scheduleModalVisible, setScheduleModalVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const BACKEND_URL = "http://192.168.1.6:5000";
+  const BACKEND_URL = "https://mediassist-rho.vercel.app";
 
-  // Fetch prescriptions from DB
+  // 1. Fetch prescriptions from DB
   useEffect(() => {
     const fetchPrescriptions = async () => {
+      setIsLoading(true);
       try {
         const response = await fetch(`${BACKEND_URL}/api/prescriptions/patient/${user.id}`);
         const data = await response.json();
         if (response.ok) {
-          // Extract medications from all prescriptions
-          const allMedications = [];
-          data.forEach(prescription => {
-            if (prescription.medications) {
-              allMedications.push(...prescription.medications);
-            }
-          });
-          setMedications(allMedications);
+          const meds = [];
+          if (Array.isArray(data)) {
+              data.forEach(prescription => {
+                if (Array.isArray(prescription.medications)) {
+                  meds.push(...prescription.medications);
+                }
+              });
+          }
+          setMedications(meds);
         }
       } catch (error) {
-        console.error("Error fetching prescriptions for reminders:", error);
+        console.error("Error fetching prescriptions:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
-    fetchPrescriptions();
-  }, [user.id]);
+    
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchPrescriptions();
+    });
 
-  // ---------------- AUTO UPDATE LOGIC ----------------
+    fetchPrescriptions();
+    return unsubscribe;
+  }, [navigation, user.id]);
+
+  // 2. AUTO UPDATE LOGIC
   useEffect(() => {
     const updateReminders = () => {
-      const next = getNextReminder(medications);
-      setNextReminder(next);
-      if (next) {
-        setTimeUntil(getMinutesUntil(next.time, next.isTomorrow));
+      const currentSchedule = getTimelineSchedule(medications);
+      setSchedule(currentSchedule);
+      
+      const next = currentSchedule.find(item => item.status === 'next');
+      
+      // If no next today, maybe it's tomorrow (this is a simplified fallback)
+      if (!next && currentSchedule.length > 0) {
+          const firstTomorrow = { ...currentSchedule[0], isTomorrow: true, status: 'next' };
+          setNextReminder(firstTomorrow);
+          setTimeUntil(getMinutesUntil(firstTomorrow.time, true));
+      } else if (next) {
+          setNextReminder(next);
+          setTimeUntil(getMinutesUntil(next.time, false));
+      } else {
+          setNextReminder(null);
+          setTimeUntil(0);
+      }
+    };
+
+    const setupNotifications = async () => {
+      await registerForPushNotificationsAsync();
+      if (medications.length > 0) {
+          syncNotificationsWithMedications(medications);
       }
     };
 
     updateReminders();
+    setupNotifications();
 
-    // Sync system notifications
-    syncNotificationsWithMedications(medications);
-
-    const interval = setInterval(updateReminders, 60000); // Update every minute
-
+    const interval = setInterval(updateReminders, 60000);
     return () => clearInterval(interval);
   }, [medications]);
 
-  // ---------------- RENDER HELPERS ----------------
-  const renderScheduleItem = ({ item }) => (
-    <View style={styles.scheduleItem}>
-      <Text style={styles.scheduleTime}>{formatTo12Hour(item.time)}</Text>
-      <View style={styles.scheduleDivider} />
-      <View>
-        <Text style={styles.scheduleMedName}>{item.medicineName}</Text>
-        <Text style={styles.scheduleDose}>{item.dosage}</Text>
-      </View>
-    </View>
-  );
+  const currentDate = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric'
+  });
 
-  // ---------------- UI ----------------
+  const renderTimelineItem = (item, index) => {
+    const isPast = item.status === 'past';
+    const isNext = item.status === 'next';
+
+    return (
+      <View key={index} style={styles.timelineRow}>
+        <View style={styles.timelineTimeColumn}>
+          <Text style={[styles.timelineTimeText, isPast && styles.textMuted]}>
+            {formatTo12Hour(item.time || "00:00")}
+          </Text>
+        </View>
+
+        <View style={styles.timelineLineColumn}>
+          <View style={[
+            styles.timelineDot, 
+            isPast ? styles.dotPast : (isNext ? styles.dotNext : styles.dotFuture)
+          ]}>
+            {isPast && <Ionicons name="checkmark" size={12} color="#fff" />}
+            {isNext && <View style={styles.dotPulse} />}
+          </View>
+          {index < schedule.length - 1 && (
+            <View style={[styles.timelineLine, isPast && styles.linePast]} />
+          )}
+        </View>
+
+        <View style={styles.timelineCardColumn}>
+          <View style={[
+            styles.timelineCard, 
+            isNext && styles.timelineCardNext,
+            isPast && styles.timelineCardPast
+          ]}>
+            <View style={styles.cardHeader}>
+              <Text style={[styles.medName, isPast && styles.textMuted]} numberOfLines={1}>
+                {item.medicineName || 'Unknown Medicine'}
+              </Text>
+              {isNext && (
+                <View style={styles.nextBadge}>
+                  <Text style={styles.nextBadgeText}>UPCOMING</Text>
+                </View>
+              )}
+            </View>
+            <Text style={[styles.medDosage, isPast && styles.textMuted]}>{item.dosage}</Text>
+            
+            <View style={styles.medInstructionsRow}>
+              <View style={styles.instructionChip}>
+                <Ionicons name="restaurant-outline" size={12} color={isPast ? "#999" : "#00796B"} />
+                <Text style={[styles.instructionText, isPast && styles.textMuted]}>{item.instructions || 'As Directed'}</Text>
+              </View>
+              <View style={styles.instructionChip}>
+                <Ionicons name="calendar-outline" size={12} color={isPast ? "#999" : "#180991"} />
+                <Text style={[styles.instructionText, {color: isPast ? '#999' : '#180991'}]}>{item.duration || 'N/A'}</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+      </View>
+    );
+  };
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#180991" />
+        <Text style={styles.loadingText}>Loading your schedule...</Text>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-
-        {/* TOP SECTION: HEADER */}
-        <View style={styles.headerSection}>
-          <Text style={styles.headerTitle}>Next Reminder</Text>
-
-          {!nextReminder ? (
-            <View style={styles.emptyBox}>
-              <Text style={styles.emptyText}>No medication scheduled for today</Text>
+        
+        <View style={styles.headerTitleContainer}>
+          <Text style={styles.pageTitle}>Medication Schedule</Text>
+          <Text style={styles.dateSubtitle}>{currentDate}</Text>
+        </View>
+        
+        {/* Next Reminder Hero Card */}
+        {nextReminder ? (
+          <View style={styles.heroCard}>
+            <View style={styles.heroBackground}>
+              <View style={styles.heroHeader}>
+                <View style={styles.heroIconBox}>
+                  <Ionicons name="alarm" size={24} color="#fff" />
+                </View>
+                <View style={styles.heroTimeInfo}>
+                  <Text style={styles.heroTimeLabel}>
+                    {nextReminder.isTomorrow ? 'Tomorrow' : 'Next Dose In'}
+                  </Text>
+                  <Text style={styles.heroCountdown}>{formatTimeRemaining(timeUntil)}</Text>
+                </View>
+                <View style={styles.heroTimeRight}>
+                  <Text style={styles.heroExactTime}>{formatTo12Hour(nextReminder.time)}</Text>
+                </View>
+              </View>
+              
+              <View style={styles.heroBody}>
+                <Text style={styles.heroMedName} numberOfLines={1}>
+                  {nextReminder.medicineName || 'Medicine'}
+                </Text>
+                <Text style={styles.heroMedDose}>{nextReminder.dosage}</Text>
+                
+                <View style={styles.heroFooterRow}>
+                  <View style={styles.heroFooterChip}>
+                    <Ionicons name="restaurant" size={14} color="#180991" />
+                    <Text style={styles.heroFooterText}>{nextReminder.instructions}</Text>
+                  </View>
+                  <View style={styles.heroFooterChip}>
+                    <Ionicons name="calendar" size={14} color="#180991" />
+                    <Text style={styles.heroFooterText}>{nextReminder.duration}</Text>
+                  </View>
+                </View>
+              </View>
             </View>
+          </View>
+        ) : (
+          <View style={styles.emptyHeroCard}>
+            <Ionicons name="checkmark-done-circle" size={50} color="#4CAF50" />
+            <Text style={styles.emptyHeroText}>You're all caught up!</Text>
+            <Text style={styles.emptyHeroSubtext}>No more medications scheduled for today.</Text>
+          </View>
+        )}
+
+        {/* Timeline View */}
+        <View style={styles.timelineContainer}>
+          <Text style={styles.timelineTitle}>Today's Timeline</Text>
+          {schedule.length > 0 ? (
+            schedule.map((item, index) => renderTimelineItem(item, index))
           ) : (
-            <View style={styles.nextReminderBox}>
-              {/* Scheduled Time Section (Calendar/Clock Style) */}
-              <View style={styles.timeInfoRow}>
-                <View style={styles.timeLabelContainer}>
-                  <Ionicons name="calendar-outline" size={18} color="#fff" />
-                  <Text style={styles.timeLabelText}>{nextReminder.isTomorrow ? 'Tomorrow' : 'Today'}</Text>
-                </View>
-                <View style={styles.timeLabelContainer}>
-                  <Ionicons name="alarm-outline" size={18} color="#fff" />
-                  <Text style={styles.timeLabelText}>{formatTo12Hour(nextReminder.time)}</Text>
-                </View>
-              </View>
-
-              <View style={styles.divider} />
-
-              {/* Countdown and Med Info */}
-              <View style={styles.timerContent}>
-                <Text style={styles.remainingText}>Remaining: {formatTimeRemaining(timeUntil)}</Text>
-                <View style={styles.nextMedRow}>
-                  <Ionicons name="medical-outline" size={24} color="#fff" />
-                  <Text style={styles.nextMedName}>{nextReminder.medicineName} ({nextReminder.dosage})</Text>
-                </View>
-              </View>
+            <View style={styles.emptyTimeline}>
+              <Ionicons name="medkit-outline" size={40} color="#ccc" />
+              <Text style={styles.emptyTimelineText}>No prescriptions assigned.</Text>
             </View>
           )}
         </View>
 
-        {/* 2. MEDICINE BOX (Clickable) */}
-        <Pressable
-          style={styles.actionCard}
-          onPress={() => setMedModalVisible(true)}
-        >
-          <View style={styles.cardIcon}>
-            <Ionicons name="medkit-outline" size={30} color="#180991" />
-          </View>
-          <View style={styles.cardTextContainer}>
-            <Text style={styles.cardTitle}>My Medications</Text>
-            <Text style={styles.cardSubtitle}>
-              {medications.length > 0 ? medications.map(m => m.name).join(', ') : 'No medications assigned'}
-            </Text>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color="#ccc" />
-        </Pressable>
-
-        {/* 3. SCHEDULE BOX (Clickable) */}
-        <Pressable
-          style={styles.actionCard}
-          onPress={() => setScheduleModalVisible(true)}
-        >
-          <View style={styles.cardIcon}>
-            <Ionicons name="calendar-outline" size={30} color="#180991" />
-          </View>
-          <View style={styles.cardTextContainer}>
-            <Text style={styles.cardTitle}>Today’s Reminder Schedule</Text>
-            <Text style={styles.cardSubtitle}>View all doses for today</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color="#ccc" />
-        </Pressable>
-
-        {/* TREATMENT COMPLETE CASE */}
-        {medications.length === 0 && (
-          <View style={styles.completedBox}>
-            <Ionicons name="checkmark-circle-outline" size={50} color="#4caf50" />
-            <Text style={styles.completedText}>Your medication course is completed</Text>
-          </View>
-        )}
-
       </ScrollView>
-
-      {/* MODALS */}
-
-      {/* Medicine Details Modal */}
-      <Modal
-        visible={medModalVisible}
-        animationType="slide"
-        transparent={true}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Medication Details</Text>
-              <Pressable onPress={() => setMedModalVisible(false)}>
-                <Ionicons name="close" size={24} color="#333" />
-              </Pressable>
-            </View>
-            <ScrollView style={styles.modalScroll}>
-              {medications.map((med) => (
-                <View key={med.id} style={styles.medDetailCard}>
-                  <Text style={styles.medDetailName}>{med.name}</Text>
-                  <Text style={styles.medDetailDose}><Text style={styles.bold}>Dosage:</Text> {med.dosage}</Text>
-                  <Text style={styles.medDetailInfo}><Text style={styles.bold}>Instructions:</Text> {med.instructions}</Text>
-                  <Text style={styles.medDetailInfo}><Text style={styles.bold}>Duration:</Text> {med.duration}</Text>
-                </View>
-              ))}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Schedule Modal */}
-      <Modal
-        visible={scheduleModalVisible}
-        animationType="slide"
-        transparent={true}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Today’s Schedule</Text>
-              <Pressable onPress={() => setScheduleModalVisible(false)}>
-                <Ionicons name="close" size={24} color="#333" />
-              </Pressable>
-            </View>
-            <FlatList
-              data={getTodaySchedule(medications)}
-              keyExtractor={(item, index) => index.toString()}
-              renderItem={renderScheduleItem}
-              ListEmptyComponent={<Text style={styles.emptyText}>No reminders for today</Text>}
-              contentContainerStyle={styles.scheduleList}
-            />
-          </View>
-        </View>
-      </Modal>
-
     </SafeAreaView>
   );
 };
@@ -230,218 +249,303 @@ const RemainderScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#F7F9FC',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F7F9FC',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#666',
   },
   scrollContent: {
     padding: 20,
+    paddingBottom: 40,
   },
-  headerSection: {
-    marginBottom: 25,
-  },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
+  pageTitle: {
+    fontSize: 28,
+    fontWeight: '900',
     color: '#180991',
-    marginBottom: 15,
   },
-  nextReminderBox: {
-    backgroundColor: '#4C39DB',
-    borderRadius: 15,
-    padding: 20,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+  headerTitleContainer: {
+    marginBottom: 20,
+  },
+  dateSubtitle: {
+    fontSize: 16,
+    color: '#555',
+    fontWeight: '600',
+    marginTop: 4,
+  },
+  heroCard: {
+    marginBottom: 30,
+    borderRadius: 24,
+    elevation: 8,
+    shadowColor: '#180991',
+    shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.2,
-    shadowRadius: 5,
-  },
-  timeInfoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-  },
-  timeLabelContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  timeLabelText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    marginLeft: 8,
-    fontSize: 14,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    marginVertical: 10,
-  },
-  timerContent: {
-    alignItems: 'center',
-    marginTop: 5,
-  },
-  remainingText: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 10,
-  },
-  nextMedRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  nextMedName: {
-    color: '#fff',
-    fontSize: 16,
-    marginLeft: 10,
-  },
-  emptyBox: {
+    shadowRadius: 15,
     backgroundColor: '#fff',
-    borderRadius: 15,
+  },
+  heroBackground: {
+    backgroundColor: '#180991',
+    borderRadius: 24,
     padding: 20,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#eee',
+    overflow: 'hidden',
   },
-  emptyText: {
-    color: '#999',
-    fontSize: 16,
-  },
-  actionCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 15,
+  heroHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 15,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
+    marginBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.1)',
+    paddingBottom: 15,
   },
-  cardIcon: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#f0f4f8',
-    justifyContent: 'center',
-    alignItems: 'center',
+  heroIconBox: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    padding: 12,
+    borderRadius: 16,
     marginRight: 15,
   },
-  cardTextContainer: {
+  heroTimeInfo: {
     flex: 1,
   },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 4,
-  },
-  cardSubtitle: {
+  heroTimeLabel: {
+    color: 'rgba(255,255,255,0.8)',
     fontSize: 13,
-    color: '#666',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
-  completedBox: {
-    marginTop: 40,
-    alignItems: 'center',
-  },
-  completedText: {
-    fontSize: 16,
-    color: '#4caf50',
+  heroCountdown: {
+    color: '#fff',
+    fontSize: 22,
     fontWeight: 'bold',
-    marginTop: 10,
-    textAlign: 'center',
   },
-  // Modal Styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
+  heroTimeRight: {
+    alignItems: 'flex-end',
   },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 25,
-    borderTopRightRadius: 25,
-    padding: 20,
-    maxHeight: '80%',
+  heroExactTime: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: '900',
   },
-  modalHeader: {
+  heroBody: {
+    marginTop: 5,
+  },
+  heroMedName: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 5,
+  },
+  heroMedDose: {
+    fontSize: 16,
+    color: 'rgba(255,255,255,0.9)',
+    marginBottom: 15,
+  },
+  heroFooterRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
+    flexWrap: 'wrap',
+    gap: 10,
   },
-  modalTitle: {
+  heroFooterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+  },
+  heroFooterText: {
+    color: '#180991',
+    fontWeight: 'bold',
+    fontSize: 13,
+    marginLeft: 6,
+  },
+  emptyHeroCard: {
+    backgroundColor: '#e8f5e9',
+    borderRadius: 24,
+    padding: 30,
+    alignItems: 'center',
+    marginBottom: 30,
+    borderWidth: 1,
+    borderColor: '#c8e6c9',
+  },
+  emptyHeroText: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#180991',
+    color: '#2e7d32',
+    marginTop: 10,
   },
-  modalScroll: {
+  emptyHeroSubtext: {
+    fontSize: 14,
+    color: '#4caf50',
+    marginTop: 5,
+  },
+  timelineContainer: {
+    marginTop: 10,
+  },
+  timelineTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
     marginBottom: 20,
   },
-  medDetailCard: {
-    backgroundColor: '#f8f9fa',
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: '#180991',
+  emptyTimeline: {
+    alignItems: 'center',
+    padding: 30,
+    backgroundColor: '#fff',
+    borderRadius: 16,
   },
-  medDetailName: {
+  emptyTimelineText: {
+    marginTop: 10,
+    color: '#999',
+    fontSize: 15,
+  },
+  timelineRow: {
+    flexDirection: 'row',
+    marginBottom: 10,
+  },
+  timelineTimeColumn: {
+    width: 60,
+    alignItems: 'flex-end',
+    paddingTop: 15,
+    paddingRight: 10,
+  },
+  timelineTimeText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  timelineLineColumn: {
+    width: 30,
+    alignItems: 'center',
+  },
+  timelineDot: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    marginTop: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 2,
+  },
+  dotPast: {
+    backgroundColor: '#4CAF50',
+  },
+  dotNext: {
+    backgroundColor: '#180991',
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+  },
+  dotPulse: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#fff',
+  },
+  dotFuture: {
+    backgroundColor: '#e0e0e0',
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  timelineLine: {
+    width: 2,
+    flex: 1,
+    backgroundColor: '#e0e0e0',
+    marginTop: -5,
+    marginBottom: -15,
+    zIndex: 1,
+  },
+  linePast: {
+    backgroundColor: '#4CAF50',
+  },
+  timelineCardColumn: {
+    flex: 1,
+    paddingBottom: 20,
+  },
+  timelineCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 15,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#b3e5fc',
+    shadowColor: '#180991',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  timelineCardNext: {
+    borderColor: '#180991',
+    borderWidth: 2,
+    elevation: 6,
+    shadowOpacity: 0.2,
+    backgroundColor: '#f5f8ff',
+  },
+  timelineCardPast: {
+    backgroundColor: '#f5f5f5',
+    elevation: 0,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 5,
+  },
+  medName: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 8,
+    flex: 1,
   },
-  medDetailDose: {
-    fontSize: 15,
-    color: '#444',
-    marginBottom: 4,
+  nextBadge: {
+    backgroundColor: '#e8eaf6',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
-  medDetailInfo: {
+  nextBadgeText: {
+    color: '#180991',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  medDosage: {
     fontSize: 14,
     color: '#666',
-    marginBottom: 2,
+    marginBottom: 10,
   },
-  bold: {
-    fontWeight: 'bold',
+  medInstructionsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 5,
   },
-  // Schedule Items
-  scheduleList: {
-    paddingBottom: 20,
-  },
-  scheduleItem: {
+  instructionChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    backgroundColor: '#f0f4f8',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    flexShrink: 1,
   },
-  scheduleTime: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#180991',
-    width: 90,
-  },
-  scheduleDivider: {
-    width: 2,
-    height: 30,
-    backgroundColor: '#eee',
-    marginHorizontal: 15,
-  },
-  scheduleMedName: {
-    fontSize: 16,
+  instructionText: {
+    fontSize: 11,
+    color: '#00796B',
+    marginLeft: 4,
     fontWeight: '600',
-    color: '#333',
+    flexShrink: 1,
   },
-  scheduleDose: {
-    fontSize: 13,
-    color: '#666',
+  textMuted: {
+    color: '#999',
   },
 });
 
