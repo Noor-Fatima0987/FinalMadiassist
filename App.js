@@ -2,6 +2,7 @@ import { StatusBar } from 'expo-status-bar';
 import { StyleSheet } from 'react-native';
 import Navigation from './src/Screens/Navigation';
 import { UserProvider } from './src/store/context/UserContext';
+import { AlarmProvider } from './src/store/context/AlarmContext';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { registerForPushNotificationsAsync } from './src/utils/notificationUtils';
@@ -24,8 +25,10 @@ export default function App() {
 
   return (
     <UserProvider>
-      <StatusBar style="dark" />
-      <Navigation />
+      <AlarmProvider>
+        <StatusBar style="dark" />
+        <Navigation />
+      </AlarmProvider>
     </UserProvider>
   );
 }

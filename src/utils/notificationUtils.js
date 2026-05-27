@@ -22,8 +22,10 @@ export async function registerForPushNotificationsAsync() {
         await Notifications.setNotificationChannelAsync('default', {
             name: 'default',
             importance: Notifications.AndroidImportance.MAX,
-            vibrationPattern: [0, 250, 250, 250],
+            vibrationPattern: [0, 1000, 500, 1000, 500, 1000, 500, 1000],
             lightColor: '#FF231F7C',
+            sound: true,
+            enableVibrate: true,
         });
     }
 
@@ -74,7 +76,7 @@ export async function scheduleMedicationReminder(medicineName, dosage, timeStr) 
             title: "Medication Reminder 💊",
             body: `It's time to take ${medicineName} (${dosage}).`,
             data: { medicineName, dosage, time: timeStr },
-            sound: 'default',
+            sound: true,
         },
         trigger: {
             hour: finalHours,

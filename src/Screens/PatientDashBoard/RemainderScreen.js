@@ -18,10 +18,12 @@ import {
 import { syncNotificationsWithMedications, registerForPushNotificationsAsync } from '../../utils/notificationUtils';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { AlarmContext } from '../../store/context/AlarmContext';
 
 const RemainderScreen = () => {
   const navigation = useNavigation();
-  const { user } = useContext(UserContext);
+  const { user } = useContext(UserContext) || {};
+  const { triggerAlarm } = useContext(AlarmContext) || {};
   const [medications, setMedications] = useState([]);
   const [schedule, setSchedule] = useState([]);
   const [nextReminder, setNextReminder] = useState(null);
@@ -78,7 +80,15 @@ const RemainderScreen = () => {
           setTimeUntil(getMinutesUntil(firstTomorrow.time, true));
       } else if (next) {
           setNextReminder(next);
-          setTimeUntil(getMinutesUntil(next.time, false));
+          const mins = getMinutesUntil(next.time, false);
+          setTimeUntil(mins);
+          
+          // Trigger alarm if it's exactly time (0 minutes until)
+          // We use a ref or check to ensure it only triggers once per minute,
+          // but since setInterval is 60s, it's roughly safe. To be extra safe:
+          if (mins === 0 && triggerAlarm) {
+            triggerAlarm(next);
+          }
       } else {
           setNextReminder(null);
           setTimeUntil(0);
