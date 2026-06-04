@@ -21,7 +21,7 @@ function ActionButtons({ navigation }) {
 
       <View style={styles.btn}>
         <PrassableCode onPress={handleBook}>
-          Login to Book Appointment
+          Book Appointment
         </PrassableCode>
       </View>
     </View>
