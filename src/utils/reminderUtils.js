@@ -4,18 +4,26 @@
  */
 export const getTodaySchedule = (medications) => {
     const schedule = [];
+    if (!Array.isArray(medications)) return schedule;
+    
     medications.forEach((med) => {
-        if (med.active) {
-            med.times.forEach((time) => {
-                schedule.push({
-                    time,
-                    medicineName: med.name,
-                    dosage: med.dosage,
-                    instructions: med.instructions,
-                    duration: med.duration,
-                });
-            });
+        // Ensure times is an array, fallback to splitting if it's a string, or empty array
+        let timesArray = [];
+        if (Array.isArray(med.times)) {
+            timesArray = med.times;
+        } else if (typeof med.times === 'string') {
+            timesArray = med.times.split(',').map(t => t.trim());
         }
+
+        timesArray.forEach((time) => {
+            schedule.push({
+                time,
+                medicineName: med.name,
+                dosage: med.dosage,
+                instructions: med.instructions,
+                duration: med.duration,
+            });
+        });
     });
 
     return schedule.sort((a, b) => a.time.localeCompare(b.time));
@@ -32,7 +40,10 @@ export const getNextReminder = (medications) => {
 
     // Filter for upcoming ones today
     const upcoming = schedule.filter((item) => {
-        const [hours, minutes] = item.time.split(":").map(Number);
+        const timeStr = (item.time || "00:00").replace(/[^0-9:]/g, "");
+        const [hoursStr, minutesStr] = timeStr.split(":");
+        const hours = parseInt(hoursStr || "0", 10);
+        const minutes = parseInt(minutesStr || "0", 10);
         const itemTotalMinutes = hours * 60 + minutes;
         return itemTotalMinutes > currentTotalMinutes;
     });
@@ -54,7 +65,10 @@ export const getNextReminder = (medications) => {
  */
 export const getMinutesUntil = (timeStr, isTomorrow = false) => {
     const now = new Date();
-    const [hours, minutes] = timeStr.split(":").map(Number);
+    const cleanTime = (timeStr || "00:00").replace(/[^0-9:]/g, "");
+    const [hoursStr, minutesStr] = cleanTime.split(":");
+    const hours = parseInt(hoursStr || "0", 10);
+    const minutes = parseInt(minutesStr || "0", 10);
 
     const target = new Date();
     target.setHours(hours, minutes, 0, 0);
@@ -71,42 +85,86 @@ export const getMinutesUntil = (timeStr, isTomorrow = false) => {
  * Converts "09:30 AM" to "09:30" (24h)
  */
 export const convertTo24Hour = (timeStr) => {
-    const [time, modifier] = timeStr.split(" ");
-    let [hours, minutes] = time.split(":");
+    try {
+        const [time, modifier] = (timeStr || "").split(" ");
+        let [hours, minutes] = (time || "00:00").split(":");
 
-    if (hours === "12") {
-        hours = "00";
+        if (hours === "12") {
+            hours = "00";
+        }
+
+        if (modifier === "PM" || modifier === "pm") {
+            hours = parseInt(hours, 10) + 12;
+        }
+
+        return `${hours.toString().padStart(2, '0')}:${minutes || "00"}`;
+    } catch {
+        return "00:00";
     }
-
-    if (modifier === "PM") {
-        hours = parseInt(hours, 10) + 12;
-    }
-
-    return `${hours.toString().padStart(2, '0')}:${minutes}`;
 };
 
 /**
- * Converts "21:30" to "09:30 PM"
+ * Converts "21:30" to "09:30 PM" gracefully handling bad data
  */
 export const formatTo12Hour = (time24) => {
-    const [hours, minutes] = time24.split(":").map(Number);
-    const ampm = hours >= 12 ? "PM" : "AM";
-    const hours12 = hours % 12 || 12;
-    const minutesStr = minutes < 10 ? `0${minutes}` : minutes;
-    return `${hours12}:${minutesStr} ${ampm}`;
+    try {
+        const cleanTime = (time24 || "00:00").replace(/[^0-9:]/g, "");
+        const [hoursStr, minutesStr] = cleanTime.split(":");
+        const hours = parseInt(hoursStr || "0", 10);
+        const minutes = parseInt(minutesStr || "0", 10);
+        
+        if (isNaN(hours) || isNaN(minutes)) return time24; // fallback to original
+
+        const ampm = hours >= 12 ? "PM" : "AM";
+        const hours12 = hours % 12 || 12;
+        const minutesFormatted = minutes < 10 ? `0${minutes}` : minutes;
+        return `${hours12}:${minutesFormatted} ${ampm}`;
+    } catch {
+        return time24; // fallback if anything fails
+    }
 };
 
 /**
  * Formats minutes into human readable string.
  */
 export const formatTimeRemaining = (minutes) => {
+    if (isNaN(minutes) || minutes < 0) return "0 minutes";
     if (minutes < 60) {
-        return `${minutes} minutes`;
+        return `${minutes} mins`;
     }
     const hours = Math.floor(minutes / 60);
     const remainingMinutes = minutes % 60;
     if (remainingMinutes === 0) {
-        return `${hours} hour${hours > 1 ? 's' : ''}`;
+        return `${hours} hr${hours > 1 ? 's' : ''}`;
     }
-    return `${hours} hour${hours > 1 ? 's' : ''} and ${remainingMinutes} min`;
+    return `${hours} hr${hours > 1 ? 's' : ''} ${remainingMinutes} min`;
+};
+
+/**
+ * Gets the timeline schedule with past, next, and future flags
+ */
+export const getTimelineSchedule = (medications) => {
+    const schedule = getTodaySchedule(medications);
+    const now = new Date();
+    const currentTotalMinutes = now.getHours() * 60 + now.getMinutes();
+
+    let nextFound = false;
+
+    return schedule.map((item) => {
+        const timeStr = (item.time || "00:00").replace(/[^0-9:]/g, "");
+        const [hoursStr, minutesStr] = timeStr.split(":");
+        const hours = parseInt(hoursStr || "0", 10);
+        const minutes = parseInt(minutesStr || "0", 10);
+        const itemTotalMinutes = hours * 60 + minutes;
+
+        let status = 'future';
+        if (itemTotalMinutes <= currentTotalMinutes) {
+            status = 'past';
+        } else if (!nextFound) {
+            status = 'next';
+            nextFound = true;
+        }
+
+        return { ...item, status };
+    });
 };

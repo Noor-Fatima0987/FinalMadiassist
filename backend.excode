@@ -1,0 +1,227 @@
+# MadiAssist Backend Development Notes (Learning Log)
+
+## 1. Package Manager Issue (Bun vs NPM)
+**Kya hua:** App run karte waqt 'Development build' ka error aa raha tha.
+**Kyun hua:** Project mein `package-lock.json` (NPM ka) aur `bun.lock` (Bun ka) dono majood thay jis se app confuse ho rahi thi ke kahan se packages uthaun.
+**Kese theek kiya:** Humne purani files delete ki aur dobara se `bun install` chalaya taake sab fresh aur theek ho jaye.
+
+## 2. Backend Server & Database ka Faisla
+**Faisla:** Humne Firebase Database ki bajaye Node.js + PostgreSQL (Supabase) use karne ka faisla kiya. 
+**Kyun kiya:** Taake project professional lagay (Enterprise level) aur FYP ke marks achay milein. Supabase cloud par hai isliye laptop par space nahi leta aur presentation ke waqt asani hoti hai.
+
+## 3. Backend Setup (Node.js + Express + Prisma)
+**Kese kiya (Step-by-Step):**
+1. Sab se pehle humne `backend` ka folder banaya.
+2. Terminal (CMD) mein `cd backend` kar ke folder mein gaye.
+3. Command `npm init -y` chalai taake `package.json` file ban jaye (yeh file backend ke packages ka record rakhti hai).
+4. **Packages Install kiye:** Humne CMD mein yeh command chalai: `npm install express cors dotenv pg @prisma/client firebase-admin` aur `npm install prisma --save-dev`.
+5. Iske baad humne `server.js` file banayi aur usme Express server ka basic code likha taake humara backend port 5000 par chalna shuru ho jaye. Server run karne ki command hai: `node server.js`.
+
+## 4. Firebase Authentication (Security)
+**Kese kiya (Step-by-Step):**
+1. **Frontend:** Humne `firebase` package install kiya (`bun install firebase`). Phir `src/firebase/firebaseConfig.js` file banayi aur usme Firebase Console se milne wali "Web Config Keys" paste kin.
+2. **Backend:** Backend ko secure karne ke liye humne Firebase Console se "Service Account" ki aik JSON file download ki (jis ka naam humne `serviceAccountKey.json` rakha) aur usay `backend` folder mein rakh diya.
+3. Phir `server.js` mein `firebase-admin` package ko is file ke zariye connect kiya. Is se humara backend itna secure ho gaya ke ab woh verify kar sakta hai ke user waqai Firebase se login ho kar aaya hai.
+
+## 5. Prisma Schema (Tables banana)
+**Kese kiya (Step-by-Step):**
+1. Humne CMD mein `npx prisma init` chalaya. Is se `prisma/schema.prisma` aur `.env` file ban gayi.
+2. `.env` file mein humne apna Supabase ka secret Database URL rakha.
+3. Phir `schema.prisma` file mein humne apni tables banayin. Prisma mein table ko "model" kehte hain.
+   - `User`: Patients aur Doctors dono ka data.
+   - `DoctorProfile`: Doctors ki extra details.
+   - `Appointment`: Appointments save karne ke liye. (Isme relation lagaya taake Doctor aur Patient link hon).
+4. **Database mein bhejna:** Table ka code likhne ke baad, humne CMD mein `npx prisma db push` chalaya. Is command ne automatically code ko parha aur Supabase par ja kar tables bana din.
+5. Hum apna data dekhne ke liye browser mein `npx prisma studio` chalate hain jis se aik website open ho jati hai jahan humara data nazar aata hai.
+
+## 6. Appointments API (Server Routes)
+**Kese kiya (Step-by-Step):**
+Jab bhi frontend (Mobile App) ko backend se koi kaam karwana hota hai, toh woh API route ko "hit" karta hai. Humne `server.js` mein do routes banaye:
+1. **Create Appointment (`app.post('/api/appointments')`):** Yeh code frontend se `patientId`, `doctorId`, `date` aur `time` leta hai. Phir `prisma.appointment.create()` ka function use kar ke us data ko PostgreSQL database mein save kar deta hai. Iska status automatically "Pending" ho jata hai.
+2. **Get Appointments (`app.get('/api/appointments/:userId')`):** Yeh code kisi bhi user (Doctor ya Patient) ki ID leta hai. Phir `prisma.appointment.findMany()` function use kar ke database se us user ki saari appointments nikaal kar mobile app ko bhej deta hai.
+
+## 7. Frontend ko Backend APIs se Jorna (Integration)
+**Kya kiya:** Mobile app (React Native) mein jo "fake" ya local data use ho raha tha, usko hata kar asli PostgreSQL database ke sath connect kiya.
+**Kese kiya (Step-by-Step):**
+1. **Doctors ki List (`/api/doctors`):** Pehle app mein doctors ka data hardcoded tha. Humne `server.js` mein aik naya route banaya jo sirf un users ko dhoondta hai jinka Role `DOCTOR` hai. Phir `BookAppointScreen.js` mein `fetch` command use kar ke in doctors ko database se mangwaya.
+2. **Appointment Book Karna (`POST /api/appointments`):** `BookAppointScreen.js` mein `handleConfirm` function ko update kiya. Ab jab patient "Confirm" dabata hai, toh app frontend se `patientId`, `doctorId`, `date`, `time` bhejti hai aur backend usay database mein save kar leta hai.
+3. **Appointments Dekhna (`GET /api/appointments/:userId`):** `AppointmentDetialScreen.js` mein pehle appointments `Context` se aa rahi theen. Humne wahan `useEffect` aur `fetch` lagaya taake app direct database se us user ki sari appointments le aaye aur screen par dikhaye. Isme `doctor.fullName` backend se automatically aata hai kyunke database mein inka "Relation" bana hua hai.
+4. **Patient Dashboard (`HomePatientScreen.js`):** Patient ke home page par jo "Up Next" (agli appointment) ka section tha, usay bhi `useEffect` ke zariye API se connect kiya taake wahan latest booked appointment ka naam aur waqt nazar aaye.
+5. **Doctor Dashboard (`AppointmentSedula.js`):** Doctor ke panel ko update kiya taake jab doctor login kare toh API uski `userId` ke zariye uske patients ki list laye. Humne appointments ko filter kar ke "Today's Schedule" (aaj ka schedule) aur "Upcoming Sessions" mein divide kar diya. Ab doctor ko asal patients ke naam nazar aayenge.
+
+---
+## 8. Prescriptions & Medications (Dawaiyan)
+**Kya kiya:** Pehle doctor jo nuskha (prescription) banata tha woh sirf temporary save hota tha. Ab humne isay database mein save karne ka nizam (system) banaya hai.
+**Kese kiya (Step-by-Step):**
+1. **Database Update:** `schema.prisma` mein do naye tables banaye: `Prescription` aur `Medication`. Phir `npx prisma db push` chala kar database ko update kiya.
+2. **Backend API:** `server.js` mein `POST /api/prescriptions` banaya jo dawai ki detail save karta hai, aur `GET /api/prescriptions/patient/:userId` banaya jo patient ki dawaiyan nikaal kar lata hai.
+3. **Doctor Panel (`AddPrescriptionScreen.js`):** Jab doctor nuskha likh kar "Save" par click karta hai, toh ab woh database mein mehfooz (save) ho jata hai. Isme asal (real) patients ka dropdown bhi laga diya gaya hai.
+4. **Patient Panel (`PrescriptionScreen.js` & `HomePatientScreen.js`):** Patient jab "My Prescriptions" ya apne Home page par jata hai toh usey direct database se apni dawaian nazar aati hain.
+
+## 9. Final Backend Integration & UI Fixes (Bug Fixes)
+**Kya kiya:** App mein kuch chote maslay thay jaise dawaiyan (prescriptions) aur appointments 3 dafa nazar aati theen. Iske ilawa Doctor ke home screen par data fake tha. Humne yeh sab fix kar diya.
+**Kese kiya (Step-by-Step):**
+1. **Duplicate Fix & Navigation:** `BookAppointScreen` aur `AddPrescriptionScreen` mein jab "Save" button dabaya jata tha toh kai baar 3 dafa data save ho jata tha. Humne wahan `isLoading` state lagayi taake jab tak data save na ho button disable rahay. Phir save hone ke baad app ko automatically "Home" screen par bhej diya (Navigate kar diya) taake user ko pata chale ke kaam mukammal ho gaya hai.
+2. **Mark as Done:** Doctor ke schedule (`AppointmentSedula.js`) mein humne "Mark as Done" ka button lagaya aur usay backend ke `PUT /api/appointments/:id/status` se connect kiya taake checked patient ka status "Completed" ho jaye.
+3. **Doctor Home & Patients List:** In dono screens ko asli database (API) se connect kiya. Ab "Total Appointments" aur "Pending" ka count bilkul theek chal raha hai.
+4. **Reminders (Alarm):** Patient ki `RemainderScreen` ko bhi ab direct database se prescribe ki hui dawaiyon se link kar diya gaya hai.
+
+---
+
+## 10. Asan Misaal (Teacher Style Example): Frontend aur Backend ka connection
+Jaise web development mein jab hum naya page banate hain toh HTML structure likhte hain.
+**Misal ke tor par HTML/CSS ki base:**
+1. `<!DOCTYPE html>`: Browser ko batata hai ke hum naya HTML5 use kar rahe hain.
+2. `<html>`: Yeh hamari website ka sab se bara tag (root) hota hai.
+3. `<head>`: Isme hum page ka `<title>` (jo upar tab mein nazar aata hai) aur CSS lagate hain jo page ka design banati hai (colors, size).
+4. `<body>`: Yeh sab se eham hissa hai, jahan hum `<div>` (box banane ke liye), `<p>` (paragraph likhne ke liye), ya `<input>` (user se text lene ke liye) use karte hain. Phir end par sab tags close karte hain.
+
+**Bilkul isi tarah React Native (Mobile App) mein Frontend aur Backend kese kaam karta hai? (Prescription ki misal):**
+
+### Step 1: Frontend (React Native - UI Banana)
+Jaise HTML mein `<input>` tag banta hai, waise hi React Native mein hum `<TextInput>` use karte hain taake user apna naam ya dawai ka naam likh sake.
+- **Form Banana:** Humne `AddPrescriptionScreen` mein ek form banaya jis mein Dawai ka naam, Khurak (Dosage) aur Waqt likhne ke liye `<TextInput>` lagaye.
+- **Button (Submit):** Jaise HTML form mein Submit ka button hota hai, yahan hum `<Pressable>` use karte hain. Jab doctor is button ko dabata hai, toh saara data jama (collect) hota hai.
+
+### Step 2: Data Backend ko Bhejna (The API Call - `fetch`)
+HTML forms direct page ko reload kar ke hit karte hain, lekin aadhunik (modern) apps mein hum `fetch` (API Call) use karte hain. Yeh aise hi hai jaise aapne Postman ko chithi (data) de kar dosray shehar (backend) bheja ho.
+**Code ki asan samjh:**
+```javascript
+// Frontend ka code
+const response = await fetch("http://192.168.1.5:5000/api/prescriptions", {
+  method: "POST", // POST ka matlab hai 'naya data bhejna'
+  headers: { "Content-Type": "application/json" }, // Hum batate hain ke chithi (data) JSON format mein hai
+  body: JSON.stringify({ // Yahan hum dawaiyon ka saara data pack karte hain
+    patientId: "123",
+    medications: [{ name: "Panadol", dosage: "1 goli" }]
+  })
+});
+```
+
+### Step 3: Backend Data Receive Karta Hai (Node.js/Express)
+Jab postman (fetch) aapke backend server (`server.js`) ke paas pohanchta hai, toh wahan ek route `app.post('/api/prescriptions')` uska intezar kar raha hota hai.
+- **Data Parhna:** Backend us data ko kholta hai (`req.body` ke zariye).
+- **Database mein Save karna:** Phir backend Prisma (jo database ka helper hai) ko hukum deta hai: `prisma.prescription.create({...})` ke is dawai ko database (PostgreSQL) ke table mein hamesha ke liye likh do.
+- **Wapis Jawab Dena:** Save hone ke baad, backend ek message wapis bhejta hai: `res.status(201).json({ success: true })` (yani kaam theek se ho gaya).
+
+### Step 4: Frontend Jawab Sun Kar Action Leta Hai
+Frontend app intezar kar rahi hoti hai. Jaise hi usay backend se `success` ka jawab milta hai:
+- Woh loading state ko khatam kar deti hai (`isLoading = false`).
+- User ko ek message box `Alert.alert("Success")` dikhati hai.
+- `navigation.navigate("Home")` ke zariye user ko dobara Home screen par bhej deti hai.
+
+**Khulasa (Conclusion):**
+- **HTML/CSS:** Sirf shakal (UI) banane ke liye hain.
+- **Frontend (React Native):** Shakal banata hai aur user se input leta hai.
+- **API (Fetch):** Dono ke darmiyan data laane aur le jane wala dakiya (messenger) hai.
+- **Backend (Node.js):** Dimagh (Brain) hai jo faisla karta hai aur data ko Database mein bhejta hai.
+- **Database (PostgreSQL):** Almari (Storage) hai jahan data hamesha mehfooz rehta hai.
+
+---
+
+## 11. Mazeed Behtariyan aur Naye Features (UI, Cancel Appointment & Prescription Delete)
+
+Humne app ko mazeed behtar banane ke liye aur user ke masail ko hal karne ke liye kuch naye kaam kiye hain.
+
+**Kese kiya (Step-by-Step):**
+
+1. **Auto-Login aur Navigation Fix:**
+   - **Masla:** Pehle jab user login hota tha toh app thori der ke liye "Sign Up" screen dikha deti thi kyunke usay check karne mein thora waqt lagta tha.
+   - **Hal:** Humne `UserContext` mein `isAuthLoading` ki state banayi. Ab jab tak app check kar rahi hoti hai ke user login hai ya nahi, tab tak screen par "Loading MadiAssist..." ka message aata hai. Aur user direct sahi dashboard par jata hai.
+
+2. **Logout Issue Fix:**
+   - **Masla:** Jab user logout karta tha toh woh sirf app se hat-ta tha, Firebase se session khatam nahi hota tha. Isliye app dubara auto-login kar deti thi.
+   - **Hal:** Humne Logout ke function mein Firebase ka `signOut(auth)` shamil kiya. Ab account mukammal taur par band ho jata hai aur naya user login kar sakta hai.
+
+3. **Reminder Timer Fix:**
+   - **Masla:** Reminders show nahi ho rahay thay kyunke code dawai ke active hone ka intezar kar raha tha (`med.active`). Database mein yeh field nahi thi.
+   - **Hal:** Humne `reminderUtils.js` se woh shart hata di. Ab jo bhi dawai aayegi, uska countdown foran shuru ho jayega.
+
+4. **Home Screen UI Updates:**
+   - Humne Home screen ke header mein "Sign Up" ko badal kar "Sign In / Sign Up" kar diya.
+   - "Book Appointment" button ko badal kar "Login to Book Appointment" kar diya taake pata chal sake ke baghair account ke appointment book nahi ho sakti.
+
+5. **Profile Clean-up:**
+   - Profile screen par jo ajeeb aur lambay system numbers (UUID IDs) nazar aa rahay thay, unko humne hide kar diya kyunke woh system ki cheezein hain aur patient ko dikhane ki zaroorat nahi thi.
+
+6. **Patient Cancel Appointment:**
+   - Humne `AppointmentDetialScreen.js` mein "Cancel Appointment" ka button lagaya. Agar patient ka plan badal jaye toh woh apni booked appointment cancel kar sakta hai. Backend par yeh status "Cancelled" ho jata hai.
+
+7. **Doctor Patient List & Delete Prescription (Aapka Idea!):**
+   - **Modal (Window):** Humne `PatientsList.js` mein system banaya ke jab doctor kisi patient ke card par click karega toh ek window khulegi.
+   - Us window mein patient ka record, bemari aur purani dawaiyan (prescriptions) nazar aayengi.
+   - **Delete Button:** Har prescription ke sath humne 🗑️ (Delete) ka button lagaya. Backend par humne `app.delete('/api/prescriptions/:id')` ka rasta banaya. Ab doctor ghalat likhi gayi dawai ko delete kar sakta hai.
+
+---
+
+## 12. Signup Screen Inputs mein Mazeed Behtariyan (Limits, Selector & Password Toggle)
+
+Humne Signup Form ko mazeed professional aur easy-to-use banane ke liye 3 baray badlao (changes) kiye hain:
+
+**Kese kiya (Step-by-Step):**
+
+1. **Phone Number aur CNIC par Digits ki Limit (maxLength):**
+   - **Masla:** Pehle user contact number ya CNIC likhte waqt jitne marzi digits type kar sakta tha, jis se ghalti ke chances hotay thay.
+   - **Hal:** Humne `InputField.js` ko update kar ke `maxLength` ki support di. Phir `SignUpScreen.js` mein:
+     - **Contact Number** ke liye `maxLength: 11` kar diya.
+     - **CNIC** ke liye `maxLength: 13` kar diya.
+     - **Doctor License Number** ke liye `maxLength: 15` kar diya.
+     - Ab user in fields mein limit se ziyada type nahi kar sakta.
+
+2. **Gender Selector (Dropdown Selection Modal):**
+   - **Masla:** Pehle gender field mein user ko khud type karna parta tha, jis se ghalat spellings ya be-tuke words type ho sakte thay.
+   - **Hal:** Humne `GenderSelector.js` naam ka ek naya component banaya. Ab jab user gender par click karta hai, toh ek professional Modal (dropdown window) open hoti hai jis mein 3 auto options aate hain:
+     - **Male**
+     - **Female**
+     - **Rather not say**
+     - User in mein se koi ek select karta hai, aur spelling ki ghalti ka sawal hi paida nahi hota.
+
+3. **Password Show/Hide Toggle (Aankh wala Button):**
+   - **Masla:** Pehle password likhte waqt sirf dot (dots) nazar aate thay. User ko confirm nahi hota tha ke usne kya type kiya hai.
+   - **Hal:** Humne `InputField.js` mein `Ionicons` (eyeball icons) ka use kiya.
+     - Password aur Confirm Password fields ke andar right side par ek aankh (Eye 👁️) ka icon laga diya.
+     - Jab user aankh par click karta hai toh password show ho jata hai, aur dobara click karne se hide ho jata hai. Yeh bilkul standard aur modern apps ki tarah kaam karta hai.
+
+---
+
+## 13. Complete Database Sync aur Editable Profile Screen
+
+**Kya kiya:** Pehle sirf Full Name aur Email database mein save hota tha. Ab humne database ko bara kiya hai taake contact number, CNIC, address, age waghera bhi save hon aur in sab ko Profile screen par edit kiya ja sake.
+
+**Kese kiya (Step-by-Step):**
+
+1. **Database Schema Upgrade (`schema.prisma`):**
+   - **Naye Fields:** Humne `User` table ke andar `contactNumber`, `cnic`, `gender`, aur `address` shamil kiya.
+   - **PatientProfile Table:** Jaise Doctor ki details ke liye `DoctorProfile` tha, waise hi humne `PatientProfile` banaya jis mein `age` aur `medicalHistory` save hoti hai.
+   - Uske baad `npx prisma db push` chala kar in tabdeeliyon ko PostgreSQL cloud par upload kar diya.
+
+2. **Backend API Update (`server.js`):**
+   - **Signup Route Update:** `POST /api/signup` mein code update kiya gaya taake naye fields database mein bhi jayen.
+   - **Update API (Naya Rasta):** Ek bilkul naya route banaya: `PUT /api/user/:firebaseId`. Yeh isliye banaya hai taake jab aap mobile se profile change karein, toh yeh backend usay database mein hamesha ke liye modify kar de.
+
+3. **Frontend: Professional "Edit Profile" Screen (`EditableProfileScreen.js`):**
+   - **Clean UI:** Random aur system generated numbers (jaise `firebaseId`, `id`, `createdAt`) ko mukammal hide kar diya gaya. Patient ya Doctor ko inki zaroorat nahi hoti.
+   - **Specific Tarteeb (Order):** Fields ko ab ek behtareen tarteeb mein dikhaya jata hai:
+     - Pehle **Full Name**
+     - Phir **Email** (read-only)
+     - **Phone Number**
+     - **Gender**, **Address**, **CNIC**
+     - **Role** (read-only)
+     - Aakhir mein role ke hisab se (Doctor ke liye Specialty aur Experience, Patient ke liye Age aur Medical History).
+   - **API Connection:** "Save" button par tap karte hi ab sirf app ke andar data change nahi hota, balke backend ki API call (`fetch PUT`) hit hoti hai jo database update karti hai. Save hone tak loading ghoomti hai aur phir success message aata hai.
+
+**Is se app heavy toh nahi hui?**
+Bilkul nahi! Data mobile memory mein nahi balke hamare Supabase (cloud database) par mehfooz ho raha hai. App ka size wahi chota aur performance super-fast hi rahegi.
+
+---
+
+## 14. Vercel Deployment Configuration
+
+**Kya kiya:** Backend (Node.js API) ko Vercel par host karne ke liye code mein choti si tabdeeli ki taake isay "Serverless Function" banaya ja sakay, jabke local machine par bhi yeh pehle ki tarah chalta rahay.
+
+**Kese kiya:**
+1. **`vercel.json` banaya:** Ek nayi file banayi jo Vercel ko batati hai ke hamara `server.js` hi main file hai aur isay `@vercel/node` environment par chalana hai.
+2. **`server.js` update kiya:** 
+   - `app.listen()` ko ek `if (!process.env.VERCEL)` condition ke andar dal diya. Is se agar app Vercel par chale, toh woh manually port open karne ki koshish nahi karta.
+   - `module.exports = app;` add kiya taake Vercel is app ko apne serverless engine mein export kar sakay.
+3. **No Local Impact:** Is condition ki wajah se jab hum laptop par `node server.js` chalate hain toh error nahi aata, aur backend theek pichli martaba ki tarah 5000 port par start ho jata hai.

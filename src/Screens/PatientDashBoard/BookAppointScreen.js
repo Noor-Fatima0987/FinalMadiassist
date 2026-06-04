@@ -12,14 +12,40 @@ import { UserContext } from "../../store/context/UserContext";
 
 const BookAppointmentScreen = ({ navigation }) => {
   // ---------------- CONTEXT ----------------
-  const { user, doctors, addAppointment } = useContext(UserContext);
+  const { user } = useContext(UserContext); // Removed addAppointment and doctors from Context
 
   // ---------------- STATES ----------------
+  const [dbDoctors, setDbDoctors] = useState([]); // Doctors from PostgreSQL
   const [doctor, setDoctor] = useState(null);
   const [date, setDate] = useState(null);
   const [time, setTime] = useState(null);
   const [contact, setContact] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
+
+  const BACKEND_URL = "https://mediassist-rho.vercel.app";
+
+  const [isLoading, setIsLoading] = useState(false);
+
+  // ---------------- GET DOCTORS FROM DB ----------------
+  useEffect(() => {
+    const fetchDoctors = async () => {
+      try {
+        const response = await fetch(`${BACKEND_URL}/api/doctors`);
+        const data = await response.json();
+        if (response.ok) {
+          // Format data to match what the screen expects
+          const formattedDoctors = data.map(doc => ({
+            ...doc,
+            specialization: doc.doctorProfile?.specialty || "General"
+          }));
+          setDbDoctors(formattedDoctors);
+        }
+      } catch (error) {
+        console.error("Error fetching doctors:", error);
+      }
+    };
+    fetchDoctors();
+  }, []);
 
   // ---------------- ROUTE ----------------
   const route = useRoute();
@@ -32,30 +58,42 @@ const BookAppointmentScreen = ({ navigation }) => {
   }, [route.params]);
 
   // ---------------- CONFIRM LOGIC ----------------
-  const handleConfirm = () => {
-    const newAppointment = {
-      id: Date.now().toString(),
-      patientName: user.fullName || "Test Patient",
-      patientAge: user.age || "N/A",
-      patientContact: contact,
-      doctorName: doctor.fullName,
-      doctorSpecialization: doctor.specialization,
-      date: date,
-      time: time,
-      status: "Confirmed"
-    };
+  const handleConfirm = async () => {
+    if (isLoading) return; // Prevent double booking
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/appointments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          patientId: user.id,
+          doctorId: doctor.id,
+          date: date,
+          time: time,
+          notes: contact
+        })
+      });
 
-    addAppointment(newAppointment);
+      const result = await response.json();
 
-    Alert.alert(
-      "Appointment Confirmed",
-      `Your appointment with ${doctor.fullName} on ${date} at ${time} is confirmed. Details have been sent to the doctor.`
-    );
-
-    // Optional: navigation.goBack();
+      if (response.ok) {
+        Alert.alert(
+          "Appointment Confirmed",
+          `Your appointment with ${doctor.fullName} on ${date} at ${time} is confirmed.`,
+          [{ text: "OK", onPress: () => navigation.navigate("Home") }]
+        );
+      } else {
+        Alert.alert("Error", result.error || "Failed to book appointment.");
+      }
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Error", "Server se connect nahi ho saka.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const isDisabled = !doctor || !date || !time || !contact;
+  const isDisabled = !doctor || !date || !time || !contact || isLoading;
 
   // ---------------- UI ----------------
   return (
@@ -80,7 +118,7 @@ const BookAppointmentScreen = ({ navigation }) => {
             <View style={{ width: "90%", backgroundColor: "#fff", borderRadius: 12, padding: 16, maxHeight: "70%" }}>
               <Text style={{ fontWeight: "bold", fontSize: 18, marginBottom: 12 }}>Select Doctor</Text>
               <FlatList
-                data={doctors}
+                data={dbDoctors}
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) => (
                   <Pressable

@@ -1,22 +1,41 @@
-import React from "react";
+﻿import React, { useState, useEffect } from "react";
 import { View, Text, FlatList, StyleSheet } from "react-native";
-import { doctorData } from '../../Data/DoctorData'
+
+const BACKEND_URL = "https://mediassist-rho.vercel.app";
 
 function OurDoctorScreen() {
+  const [dbDoctors, setDbDoctors] = useState([]);
+
+  useEffect(() => {
+    const fetchDoctors = async () => {
+      try {
+        const response = await fetch(`${BACKEND_URL}/api/doctors`);
+        const data = await response.json();
+        if (response.ok) {
+          const formattedDoctors = data.map(doc => ({
+            ...doc,
+            specialization: doc.doctorProfile?.specialty || "General"
+          }));
+          setDbDoctors(formattedDoctors);
+        }
+      } catch (error) {
+        console.error("Error fetching doctors:", error);
+      }
+    };
+    fetchDoctors();
+  }, []);
+
   return (
     <View style={{padding:15}}>
       <FlatList
-        data={doctorData}
+        data={dbDoctors}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View style={styles.card}>
             <View style={styles.info}>
-              <Text style={styles.name}>{item.name}</Text>
+              <Text style={styles.name}>{item.fullName}</Text>
               <Text style={styles.spec}>{item.specialization}</Text>
-              <Text style={styles.detail}>Experience: {item.experience}</Text>
-              <Text style={styles.detail}>Contact: {item.contact}</Text>
-              <Text style={styles.detail}>Location: {item.location}</Text>
-              <Text style={styles.detail}>Available: {item.availableTime}</Text>
+              <Text style={styles.detail}>Email: {item.email}</Text>
             </View>
           </View>
         )}

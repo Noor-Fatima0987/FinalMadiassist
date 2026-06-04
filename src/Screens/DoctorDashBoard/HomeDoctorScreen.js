@@ -1,23 +1,55 @@
-import React, { useContext, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, Pressable } from 'react-native';
+import React, { useContext, useMemo, useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { UserContext } from '../../store/context/UserContext';
 import { Ionicons } from '@expo/vector-icons';
 
+const BACKEND_URL = "https://mediassist-rho.vercel.app";
+
 const HomeDoctorScreen = ({ navigation }) => {
-  const { user, appointments } = useContext(UserContext);
+  const { user } = useContext(UserContext); // Removed appointments from context
+  const [dbAppointments, setDbAppointments] = useState([]);
+
+  // Fetch appointments for this doctor
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      try {
+        const response = await fetch(`${BACKEND_URL}/api/appointments/${user.id}`);
+        const data = await response.json();
+        if (response.ok) {
+          if (Array.isArray(data)) {
+            setDbAppointments(data);
+          } else {
+            setDbAppointments([]);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching doctor appointments:", error);
+      }
+    };
+    
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchAppointments();
+    });
+    
+    // Initial fetch
+    fetchAppointments();
+
+    return unsubscribe;
+  }, [navigation, user.id]);
 
   // Today's Date
   const todayDate = new Date().toISOString().split('T')[0];
 
   // Stats
   const todayApps = useMemo(() =>
-    appointments.filter(app => app.doctorName === user.fullName && app.date === todayDate),
-    [appointments, user.fullName, todayDate]
+    dbAppointments.filter(app => app.date === todayDate),
+    [dbAppointments, todayDate]
   );
 
   const pendingApps = useMemo(() =>
-    todayApps.filter(app => app.status !== 'Completed'),
-    [todayApps]
+    dbAppointments.filter(app => app.status === 'Pending'),
+    [dbAppointments]
   );
 
   return (
@@ -65,10 +97,10 @@ const HomeDoctorScreen = ({ navigation }) => {
               <Text style={styles.timeText}>{pendingApps[0].time}</Text>
             </View>
             <View style={styles.patientInfo}>
-              <Text style={styles.patientName}>{pendingApps[0].patientName}</Text>
-              <Text style={styles.patientDetail}>Age: {pendingApps[0].patientAge} • Consultation</Text>
+              <Text style={styles.patientName}>{pendingApps[0].patient?.fullName || "Patient"}</Text>
+              <Text style={styles.patientDetail}>Age: {pendingApps[0].patient?.age || "N/A"} â€¢ Consultation</Text>
             </View>
-            <Pressable style={styles.startBtn}>
+            <Pressable style={styles.startBtn} onPress={() => navigation.navigate('Sedular')}>
               <Text style={styles.startBtnText}>Start</Text>
             </Pressable>
           </View>

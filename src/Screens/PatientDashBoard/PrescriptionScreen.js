@@ -3,20 +3,42 @@ import { StyleSheet, Text, View, FlatList, SafeAreaView } from 'react-native';
 import { UserContext } from '../../store/context/UserContext';
 import { Ionicons } from '@expo/vector-icons';
 
-const PrescriptionScreen = () => {
-  const { user, prescriptions } = useContext(UserContext);
+const BACKEND_URL = "https://mediassist-rho.vercel.app";
 
-  // Filter prescriptions for the current patient
-  const patientPrescriptions = prescriptions.filter(
-    (prescription) => prescription.patientName === user.fullName
-  );
+const PrescriptionScreen = ({ navigation }) => {
+  const { user } = useContext(UserContext); // Removed prescriptions from context
+  const [dbPrescriptions, setDbPrescriptions] = React.useState([]);
+
+  React.useEffect(() => {
+    const fetchPrescriptions = async () => {
+      try {
+        const response = await fetch(`${BACKEND_URL}/api/prescriptions/patient/${user.id}`);
+        const data = await response.json();
+        if (response.ok) {
+          setDbPrescriptions(data);
+        }
+      } catch (error) {
+        console.error("Error fetching patient prescriptions:", error);
+      }
+    };
+    
+    // Add navigation listener to refresh on focus if navigation prop is available
+    if (navigation) {
+      const unsubscribe = navigation.addListener('focus', () => {
+        fetchPrescriptions();
+      });
+      return unsubscribe;
+    } else {
+      fetchPrescriptions();
+    }
+  }, [navigation, user.id]);
 
   const renderPrescription = ({ item }) => (
     <View style={styles.prescriptionCard}>
       <View style={styles.headerRow}>
         <Ionicons name="document-text-outline" size={24} color="#180991" />
         <View style={styles.headerInfo}>
-          <Text style={styles.doctorName}>Prescribed by {item.doctorName}</Text>
+          <Text style={styles.doctorName}>Prescribed by {item.doctor?.fullName || "Doctor"}</Text>
           <Text style={styles.date}>{item.date}</Text>
         </View>
       </View>
@@ -31,12 +53,22 @@ const PrescriptionScreen = () => {
             <Text style={styles.medicationName}>{med.name}</Text>
           </View>
           <View style={styles.medicationDetails}>
-            <Text style={styles.detailText}>💊 Dosage: {med.dosage}</Text>
-            <Text style={styles.detailText}>📋 Instructions: {med.instructions}</Text>
-            <Text style={styles.detailText}>⏱️ Duration: {med.duration}</Text>
-            <Text style={styles.detailText}>
-              🕐 Times: {med.times.join(', ')}
-            </Text>
+            <View style={styles.detailRow}>
+              <Ionicons name="medical-outline" size={14} color="#555" />
+              <Text style={styles.detailText}>Dosage: {med.dosage}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Ionicons name="information-circle-outline" size={14} color="#555" />
+              <Text style={styles.detailText}>Instructions: {med.instructions}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Ionicons name="calendar-outline" size={14} color="#555" />
+              <Text style={styles.detailText}>Duration: {med.duration}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Ionicons name="time-outline" size={14} color="#555" />
+              <Text style={styles.detailText}>Times: {Array.isArray(med.times) ? med.times.join(', ') : med.times}</Text>
+            </View>
           </View>
         </View>
       ))}
@@ -51,7 +83,7 @@ const PrescriptionScreen = () => {
       </View>
 
       <FlatList
-        data={patientPrescriptions}
+        data={dbPrescriptions}
         keyExtractor={(item) => item.id}
         renderItem={renderPrescription}
         contentContainerStyle={styles.listContent}
@@ -157,7 +189,13 @@ const styles = StyleSheet.create({
   detailText: {
     fontSize: 13,
     color: '#555',
-    marginBottom: 4,
+    marginLeft: 6,
+    flex: 1,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 6,
   },
   emptyContainer: {
     marginTop: 100,

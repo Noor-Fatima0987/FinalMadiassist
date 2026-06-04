@@ -2,10 +2,15 @@ import React, { useState, useContext } from "react";
 import { View, Text, FlatList, StyleSheet, KeyboardAvoidingView, Platform } from "react-native";
 import InputField from "../../Components/SigiUpComponent/InputField";
 import RoleSelector from "../../Components/SigiUpComponent/RoleSelector";
+import GenderSelector from "../../Components/SigiUpComponent/GenderSelector";
 import SubmitButton from "../../Components/SigiUpComponent/SubmitButton";
 import SignInLink from "../../Components/SigiUpComponent/SignInLink";
+import { auth } from "../../firebase/firebaseConfig";
+import { createUserWithEmailAndPassword } from "firebase/auth";
 import { UserContext } from "../../store/context/UserContext";
 import { moderateScale, platformFont } from "../../utils/responsive";
+
+const BACKEND_URL = "https://mediassist-rho.vercel.app"; // Localtunnel URL
 
 export default function SignUpScreen({ navigation }) {
   const { saveUser, addDoctor } = useContext(UserContext);
@@ -32,7 +37,7 @@ export default function SignUpScreen({ navigation }) {
     navigation.navigate("Sign In");
   }
 
-  const handleCreateAccount = () => {
+  const handleCreateAccount = async () => {
     const newErrors = {};
 
     if (!fullName.trim()) newErrors.fullName = "Full name is required";
@@ -50,6 +55,7 @@ export default function SignUpScreen({ navigation }) {
     else if (cnic.length !== 13) newErrors.cnic = "CNIC must be 13 digits";
 
     if (!role.trim()) newErrors.role = "Please select your role";
+    if (!gender.trim()) newErrors.gender = "Please select your gender";
 
     if (!password.trim()) newErrors.password = "Password is required";
     else if (password.length < 8) newErrors.password = "Password must be at least 8 characters";
@@ -61,55 +67,45 @@ export default function SignUpScreen({ navigation }) {
 
     setErrors(newErrors);
 
-    // if (Object.keys(newErrors).length === 0) {
-    //   const userData = { fullName, userName, gender, role, cnic, contactNumber, address, password, specialization, licenseNo, age, medicalHistory };
-    //   saveUser(userData);
-    //   if (role === "doctor") navigation.navigate("Main Doctor");
-    //   else navigation.navigate("Main Patient");
-    // }
     if (Object.keys(newErrors).length === 0) {
-      let userData = {
-        fullName,
-        userName,
-        gender,
-        email,
-        role,
-        cnic,
-        contactNumber,
-        address,
-        password,
-      };
-      if (role === "doctor") {
-        userData.specialization = specialization;
-        userData.licenseNo = licenseNo;
-      }
-      else if (role === "patient") {
-        userData.age = age;
-        userData.medicalHistory = medicalHistory;
-      }
+      try {
+        // 1. Firebase Auth mein user create karo
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const firebaseUser = userCredential.user;
 
-      saveUser(userData);
+        // 2. Humare Backend Server (PostgreSQL) ko data bhejo
+        const response = await fetch(`${BACKEND_URL}/api/signup`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            firebaseId: firebaseUser.uid,
+            email,
+            fullName,
+            role,
+            specialization,
+            age,
+            medicalHistory,
+            gender
+          }),
+        });
 
-      // If role is doctor, add to doctors array
-      if (role === "doctor") {
-        const doctorData = {
-          id: Date.now().toString(),
-          fullName,
-          specialization,
-          licenseNo,
-          contactNumber,
-          email,
-          experience: "New Doctor",
-          location: address,
-          availableTime: "Please set your availability"
-        };
-        addDoctor(doctorData);
+        const result = await response.json();
+
+        if (response.ok) {
+          alert("Account Created Successfully!");
+          saveUser(result); // result is the user object itself
+          // Conditional rendering in Navigation.js handles the screen switch automatically.
+        } else {
+          alert("Database error: " + result.error);
+        }
+
+      } catch (error) {
+        console.error(error);
+        alert("Registration Error: " + error.message);
       }
-
-      if (role === "doctor") navigation.navigate("Main Doctor");
-      else navigation.navigate("Main Patient");
     }
-
   };
 
   // Build form fields dynamically
@@ -117,10 +113,10 @@ export default function SignUpScreen({ navigation }) {
     { id: "fullName", label: "Full Name", value: fullName, onChange: setFullName, placeholder: "Enter your full name", required: true },
     { id: "userName", label: "Username", value: userName, onChange: setUserName, placeholder: "Enter your username" },
     { id: "email", label: "Email", value: email, onChange: setEmail, placeholder: "Enter your email", required: true, keyboardType: "email-address" },
-    { id: "contactNumber", label: "Contact Number", value: contactNumber, onChange: setContactNumber, placeholder: "Enter your contact number", required: true, keyboardType: "numeric" },
-    { id: "gender", label: "Gender", value: gender, onChange: setGender, placeholder: "Enter your gender" },
+    { id: "contactNumber", label: "Contact Number", value: contactNumber, onChange: setContactNumber, placeholder: "Enter your contact number", required: true, keyboardType: "numeric", maxLength: 11 },
+    { id: "gender", label: "Gender", value: gender, onChange: setGender, required: true, type: "gender" },
     { id: "role", label: "Select Role", value: role, onChange: setRole, required: true, type: "role" },
-    { id: "cnic", label: "CNIC", value: cnic, onChange: setCnic, placeholder: "Enter your CNIC (without dashes)", required: true, keyboardType: "numeric" },
+    { id: "cnic", label: "CNIC", value: cnic, onChange: setCnic, placeholder: "Enter your CNIC (without dashes)", required: true, keyboardType: "numeric", maxLength: 13 },
     { id: "address", label: "Address", value: address, onChange: setAddress, placeholder: "Enter your address", required: true, multiline: true },
     { id: "password", label: "Password", value: password, onChange: setPassword, placeholder: "Enter your password", required: true, secureTextEntry: true },
     { id: "confirmPassword", label: "Confirm Password", value: confirmPassword, onChange: setConfirmPassword, placeholder: "Re-enter your password", required: true, secureTextEntry: true },
@@ -130,7 +126,7 @@ export default function SignUpScreen({ navigation }) {
   if (role === "doctor") {
     const doctorFields = [
       { id: "specialization", label: "Specialization", value: specialization, onChange: setSpecialization, placeholder: "Enter your specialization", required: true },
-      { id: "licenseNo", label: "License Number", value: licenseNo, onChange: setLicenseNo, placeholder: "Enter your license number", required: true }
+      { id: "licenseNo", label: "License Number", value: licenseNo, onChange: setLicenseNo, placeholder: "Enter your license number", required: true, maxLength: 15 }
     ];
     formFields.splice(6, 0, ...doctorFields);
   } else if (role === "patient") {
@@ -155,6 +151,7 @@ export default function SignUpScreen({ navigation }) {
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => {
             if (item.type === "role") return <RoleSelector role={role} setRole={setRole} error={errors.role} />;
+            if (item.type === "gender") return <GenderSelector gender={gender} setGender={setGender} error={errors.gender} />;
             return (
               <InputField
                 key={item.id}
@@ -166,6 +163,7 @@ export default function SignUpScreen({ navigation }) {
                 secureTextEntry={item.secureTextEntry}
                 error={errors[item.id]}
                 keyboardType={item.keyboardType}
+                maxLength={item.maxLength}
               />
             );
           }}

@@ -25,7 +25,7 @@ function Header({ navigation }) {
         mainStyle={{ margin: 0 }}
         onPress={handleSignUp}
       >
-        SignUp
+        Sign In / Sign Up
       </PrassableCode>
     </View>
   );

@@ -209,7 +209,22 @@ function Doctordarwer() {
 //     )
 // }
 
+import { UserContext } from '../store/context/UserContext';
+import { useContext } from 'react';
+import { ActivityIndicator } from 'react-native';
+
 function Navigation() {
+  const { user, isAuthLoading } = useContext(UserContext);
+
+  if (isAuthLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f4f7fe' }}>
+        <ActivityIndicator size="large" color="#180991ff" />
+        <Text style={{ marginTop: 10, color: '#180991ff', fontWeight: 'bold' }}>Loading MadiAssist...</Text>
+      </View>
+    );
+  }
+
   return (
     <NavigationContainer>
       <Stack.Navigator
@@ -223,23 +238,33 @@ function Navigation() {
           headerLeft: () => <BackButton />,
         }}
       >
-        <Stack.Screen name='Home' component={HomeScreen}
-          options={{ headerShown: false, }}
-        />
-        <Stack.Screen name='Sign In' component={SignInScreen} />
-        <Stack.Screen name='Sign Up' component={SignUpScreen} />
-        <Stack.Screen name='Our Doctor' component={OurDoctorScreen} />
-        <Stack.Screen name='Main Doctor' component={Doctordarwer}
-          options={{ headerShown: false, }}
-        />
-        <Stack.Screen name='Main Patient' component={PatientDrawer}
-          options={{ headerShown: false, }}
-        />
-        <Stack.Screen name='Setting' component={HomeSetting} />
-        <Stack.Screen name='Profile' component={ProfileScreen} />
-        <Stack.Screen name='Prescription' component={Prescription} />
-        <Stack.Screen name='Patient List' component={PatientList} />
-        <Stack.Screen name='Edit Profile' component={EditAbleProfileScreen} />
+        {!user?.role ? (
+          // Auth Stack (Not Logged In)
+          <>
+            <Stack.Screen name='Home' component={HomeScreen} options={{ headerShown: false }} />
+            <Stack.Screen name='Sign In' component={SignInScreen} />
+            <Stack.Screen name='Sign Up' component={SignUpScreen} />
+          </>
+        ) : user.role === 'DOCTOR' ? (
+          // Doctor Stack
+          <>
+            <Stack.Screen name='Main Doctor' component={Doctordarwer} options={{ headerShown: false }} />
+            <Stack.Screen name='Setting' component={HomeSetting} />
+            <Stack.Screen name='Profile' component={ProfileScreen} />
+            <Stack.Screen name='Patient List' component={PatientList} />
+            <Stack.Screen name='Edit Profile' component={EditAbleProfileScreen} />
+          </>
+        ) : (
+          // Patient Stack
+          <>
+            <Stack.Screen name='Main Patient' component={PatientDrawer} options={{ headerShown: false }} />
+            <Stack.Screen name='Our Doctor' component={OurDoctorScreen} />
+            <Stack.Screen name='Setting' component={HomeSetting} />
+            <Stack.Screen name='Profile' component={ProfileScreen} />
+            <Stack.Screen name='Prescription' component={Prescription} />
+            <Stack.Screen name='Edit Profile' component={EditAbleProfileScreen} />
+          </>
+        )}
       </Stack.Navigator>
     </NavigationContainer>
   )
