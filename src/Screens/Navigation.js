@@ -20,6 +20,8 @@ import Prescription from './PatientDashBoard/PrescriptionScreen'
 import HeaderMenu from '../Components/NavigatioComponent/HeaderMuen';
 import AddPrescription from "./DoctorDashBoard/AddprescriptionScreen";
 import PatientList from "./DoctorDashBoard/PatientsList"
+import AdminHomeScreen from './AdminDashBoard/AdminHomeScreen';
+import ApprovalPendingScreen from './DoctorDashBoard/ApprovalPendingScreen';
 // import HeaderMenu from '../Components/NavigatioComponent/HeaderMuen';
 import AboutUsScreen from './SettingScreen/AboutUsScreen';
 import EditAbleProfileScreen from './SettingScreen/EditAbleProfileScreen';
@@ -245,15 +247,27 @@ function Navigation() {
             <Stack.Screen name='Sign In' component={SignInScreen} />
             <Stack.Screen name='Sign Up' component={SignUpScreen} />
           </>
-        ) : user.role === 'DOCTOR' ? (
-          // Doctor Stack
+        ) : user.role === 'ADMIN' ? (
+          // Admin Stack
           <>
-            <Stack.Screen name='Main Doctor' component={Doctordarwer} options={{ headerShown: false }} />
-            <Stack.Screen name='Setting' component={HomeSetting} />
-            <Stack.Screen name='Profile' component={ProfileScreen} />
-            <Stack.Screen name='Patient List' component={PatientList} />
-            <Stack.Screen name='Edit Profile' component={EditAbleProfileScreen} />
+            <Stack.Screen name='Admin Home' component={AdminHomeScreen} options={{ headerShown: false }} />
           </>
+        ) : user.role === 'DOCTOR' ? (
+          user.doctorProfile?.isApproved === false ? (
+            // Doctor is registered but pending approval
+            <>
+              <Stack.Screen name='Approval Pending' component={ApprovalPendingScreen} options={{ headerShown: false }} />
+            </>
+          ) : (
+            // Doctor Stack (Approved)
+            <>
+              <Stack.Screen name='Main Doctor' component={Doctordarwer} options={{ headerShown: false }} />
+              <Stack.Screen name='Setting' component={HomeSetting} />
+              <Stack.Screen name='Profile' component={ProfileScreen} />
+              <Stack.Screen name='Patient List' component={PatientList} />
+              <Stack.Screen name='Edit Profile' component={EditAbleProfileScreen} />
+            </>
+          )
         ) : (
           // Patient Stack
           <>
