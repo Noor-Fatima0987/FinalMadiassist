@@ -247,18 +247,14 @@ function Navigation() {
             <Stack.Screen name='Sign In' component={SignInScreen} />
             <Stack.Screen name='Sign Up' component={SignUpScreen} />
           </>
-        ) : user.role === 'ADMIN' ? (
-          // Admin Stack
-          <>
-            <Stack.Screen name='Admin Home' component={AdminHomeScreen} options={{ headerShown: false }} />
-          </>
         ) : user.role === 'DOCTOR' ? (
-          user.doctorProfile?.isApproved === false ? (
-            // Doctor is registered but pending approval
-            <>
-              <Stack.Screen name='Approval Pending' component={ApprovalPendingScreen} options={{ headerShown: false }} />
-            </>
-          ) : (
+          // Reverted for now (Admin dashboard commented out)
+          // user.doctorProfile?.isApproved === false ? (
+          //   // Doctor is registered but pending approval
+          //   <>
+          //     <Stack.Screen name='Approval Pending' component={ApprovalPendingScreen} options={{ headerShown: false }} />
+          //   </>
+          // ) : (
             // Doctor Stack (Approved)
             <>
               <Stack.Screen name='Main Doctor' component={Doctordarwer} options={{ headerShown: false }} />
@@ -267,7 +263,7 @@ function Navigation() {
               <Stack.Screen name='Patient List' component={PatientList} />
               <Stack.Screen name='Edit Profile' component={EditAbleProfileScreen} />
             </>
-          )
+          // )
         ) : (
           // Patient Stack
           <>

@@ -3,15 +3,8 @@ const cors = require('cors');
 const { PrismaClient } = require('@prisma/client');
 const { Pool } = require('pg');
 const { PrismaPg } = require('@prisma/adapter-pg');
-const admin = require('firebase-admin');
-const serviceAccount = require('./serviceAccountKey.json');
 require('dotenv').config();
 const { sendOtpEmail } = require('./utils/mailer');
-
-// Firebase Admin Setup
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
-});
 
 const app = express();
 
