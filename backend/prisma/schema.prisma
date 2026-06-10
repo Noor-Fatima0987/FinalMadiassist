@@ -38,6 +38,8 @@ model DoctorProfile {
   specialty  String
   experience Int?     // Years of experience
   bio        String?
+  licenseNo  String?
+  isApproved Boolean  @default(false)
   
   // Relation back to User
   userId     String   @unique
@@ -106,5 +108,13 @@ enum Role {
   PATIENT
   DOCTOR
   ADMIN
+}
+
+model OtpVerification {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  code      String   @default("")
+  expiresAt DateTime @default(now())
+  createdAt DateTime @default(now())
 }
 

@@ -8,42 +8,61 @@ import { moderateScale } from "../../utils/responsive";
 export default function ProfileScreen({ navigation }) {
   const { user } = useContext(UserContext);
 
+  if (!user) {
+    return null;
+  }
+
+  const isDoctor = user.role === "DOCTOR" || user.role === "doctor";
+  const isPatient = user.role === "PATIENT" || user.role === "patient";
+
   return (
     <ScrollView style={styles.container}>
-      
-      {Object.entries(user).map(([key, value]) => {
-        if (!value) return null;
-        if (["password", "id", "firebaseId", "createdAt", "updatedAt"].includes(key)) return null;
+      <ProfileField label="Full Name" value={user.fullName || "N/A"} />
+      <ProfileField label="Email" value={user.email || "N/A"} />
+      <ProfileField label="Contact Number" value={user.contactNumber || "N/A"} />
+      <ProfileField label="Gender" value={user.gender || "N/A"} />
+      <ProfileField label="CNIC" value={user.cnic || "N/A"} />
+      <ProfileField label="Address" value={user.address || "N/A"} />
 
-        // Handling nested Doctor Profile object
-        if (key === "doctorProfile" && typeof value === "object") {
-          return Object.entries(value).map(([subKey, subValue]) => {
-            if (!subValue) return null;
-            if (["id", "userId", "createdAt", "updatedAt"].includes(subKey)) return null;
-            return (
-              <ProfileField
-                key={subKey}
-                label={subKey.charAt(0).toUpperCase() + subKey.slice(1)}
-                value={subValue.toString()}
-              />
-            );
-          });
-        }
-
-        // Safeguard against rendering other objects directly
-        if (typeof value === "object") return null;
-
-        return (
+      {isDoctor && (
+        <>
           <ProfileField
-            key={key}
-            label={key.charAt(0).toUpperCase() + key.slice(1)}
-            value={value.toString()}
+            label="Specialization"
+            value={user.doctorProfile?.specialty || "N/A"}
           />
-        );
-      })}
+          <ProfileField
+            label="Experience"
+            value={
+              user.doctorProfile?.experience !== undefined && user.doctorProfile?.experience !== null
+                ? `${user.doctorProfile.experience} Years`
+                : "N/A"
+            }
+          />
+          <ProfileField
+            label="License Number"
+            value={user.doctorProfile?.licenseNo || "N/A"}
+          />
+        </>
+      )}
+
+      {isPatient && (
+        <>
+          <ProfileField
+            label="Age"
+            value={
+              user.patientProfile?.age !== undefined && user.patientProfile?.age !== null
+                ? user.patientProfile.age.toString()
+                : "N/A"
+            }
+          />
+          <ProfileField
+            label="Medical History"
+            value={user.patientProfile?.medicalHistory || "N/A"}
+          />
+        </>
+      )}
 
       <EditButton onPress={() => navigation.navigate("Edit Profile")} />
-
     </ScrollView>
   );
 }

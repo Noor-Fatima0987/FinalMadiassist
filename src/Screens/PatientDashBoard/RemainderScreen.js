@@ -11,8 +11,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { UserContext } from '../../store/context/UserContext';
 import {
   getTimelineSchedule,
-  getMinutesUntil,
-  formatTimeRemaining,
+  getSecondsUntil,
+  formatSecondsRemaining,
   formatTo12Hour,
 } from '../../utils/reminderUtils';
 import { syncNotificationsWithMedications, registerForPushNotificationsAsync } from '../../utils/notificationUtils';
@@ -28,6 +28,7 @@ const RemainderScreen = () => {
   const [schedule, setSchedule] = useState([]);
   const [nextReminder, setNextReminder] = useState(null);
   const [timeUntil, setTimeUntil] = useState(0);
+  const [lastTriggeredTime, setLastTriggeredTime] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
   const BACKEND_URL = "https://mediassist-rho.vercel.app";
@@ -77,16 +78,16 @@ const RemainderScreen = () => {
       if (!next && currentSchedule.length > 0) {
           const firstTomorrow = { ...currentSchedule[0], isTomorrow: true, status: 'next' };
           setNextReminder(firstTomorrow);
-          setTimeUntil(getMinutesUntil(firstTomorrow.time, true));
+          setTimeUntil(getSecondsUntil(firstTomorrow.time, true));
       } else if (next) {
           setNextReminder(next);
-          const mins = getMinutesUntil(next.time, false);
-          setTimeUntil(mins);
+          const secs = getSecondsUntil(next.time, false);
+          setTimeUntil(secs);
           
-          // Trigger alarm if it's exactly time (0 minutes until)
-          // We use a ref or check to ensure it only triggers once per minute,
-          // but since setInterval is 60s, it's roughly safe. To be extra safe:
-          if (mins === 0 && triggerAlarm) {
+          // Trigger alarm if it's exactly target time (0 or fewer seconds until)
+          // Use lastTriggeredTime guard to prevent multiple triggers within the same target minute.
+          if (secs <= 0 && triggerAlarm && lastTriggeredTime !== next.time) {
+            setLastTriggeredTime(next.time);
             triggerAlarm(next);
           }
       } else {
@@ -105,9 +106,9 @@ const RemainderScreen = () => {
     updateReminders();
     setupNotifications();
 
-    const interval = setInterval(updateReminders, 60000);
+    const interval = setInterval(updateReminders, 1000);
     return () => clearInterval(interval);
-  }, [medications]);
+  }, [medications, lastTriggeredTime]);
 
   const currentDate = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
@@ -204,7 +205,7 @@ const RemainderScreen = () => {
                   <Text style={styles.heroTimeLabel}>
                     {nextReminder.isTomorrow ? 'Tomorrow' : 'Next Dose In'}
                   </Text>
-                  <Text style={styles.heroCountdown}>{formatTimeRemaining(timeUntil)}</Text>
+                  <Text style={styles.heroCountdown}>{formatSecondsRemaining(timeUntil)}</Text>
                 </View>
                 <View style={styles.heroTimeRight}>
                   <Text style={styles.heroExactTime}>{formatTo12Hour(nextReminder.time)}</Text>

@@ -168,3 +168,38 @@ export const getTimelineSchedule = (medications) => {
         return { ...item, status };
     });
 };
+
+/**
+ * Calculates precise seconds until a target HH:mm time.
+ */
+export const getSecondsUntil = (timeStr, isTomorrow = false) => {
+    const now = new Date();
+    const cleanTime = (timeStr || "00:00").replace(/[^0-9:]/g, "");
+    const [hoursStr, minutesStr] = cleanTime.split(":");
+    const hours = parseInt(hoursStr || "0", 10);
+    const minutes = parseInt(minutesStr || "0", 10);
+
+    const target = new Date();
+    target.setHours(hours, minutes, 0, 0);
+
+    if (isTomorrow) {
+        target.setDate(target.getDate() + 1);
+    }
+
+    const diffMs = target - now;
+    return Math.max(0, Math.floor(diffMs / 1000));
+};
+
+/**
+ * Formats seconds remaining as HH:MM:SS.
+ */
+export const formatSecondsRemaining = (totalSeconds) => {
+    if (isNaN(totalSeconds) || totalSeconds <= 0) return "00:00:00";
+    
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    
+    const pad = (num) => num.toString().padStart(2, '0');
+    return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+};

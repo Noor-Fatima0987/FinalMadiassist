@@ -3,14 +3,8 @@ const cors = require('cors');
 const { PrismaClient } = require('@prisma/client');
 const { Pool } = require('pg');
 const { PrismaPg } = require('@prisma/adapter-pg');
-const admin = require('firebase-admin');
-const serviceAccount = require('./serviceAccountKey.json');
 require('dotenv').config();
-
-// Firebase Admin Setup
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
-});
+const { sendOtpEmail } = require('./utils/mailer');
 
 const app = express();
 
@@ -37,7 +31,7 @@ app.get('/api/test', (req, res) => {
 // Signup Route
 app.post('/api/signup', async (req, res) => {
   console.log("Signup attempt for:", req.body.email);
-  const { firebaseId, email, fullName, role, specialization, age, medicalHistory, contactNumber, cnic, gender, address } = req.body;
+  const { firebaseId, email, fullName, role, specialization, experience, licenseNo, age, medicalHistory, contactNumber, cnic, gender, address } = req.body;
 
   try {
     const newUser = await prisma.user.create({
@@ -53,6 +47,9 @@ app.post('/api/signup', async (req, res) => {
         doctorProfile: role.toLowerCase() === 'doctor' ? {
           create: {
             specialty: specialization || 'General',
+            experience: experience ? parseInt(experience) : 0,
+            licenseNo: licenseNo || '',
+            isApproved: false
           }
         } : undefined,
         patientProfile: role.toLowerCase() === 'patient' ? {
@@ -118,11 +115,13 @@ app.put('/api/user/:firebaseId', async (req, res) => {
             create: { 
               specialty: doctorProfile.specialty || 'General', 
               experience: safeParseInt(doctorProfile.experience), 
+              licenseNo: doctorProfile.licenseNo || '',
               bio: doctorProfile.bio || '' 
             },
             update: { 
               specialty: doctorProfile.specialty, 
               experience: safeParseInt(doctorProfile.experience), 
+              licenseNo: doctorProfile.licenseNo,
               bio: doctorProfile.bio 
             }
           }
@@ -291,6 +290,117 @@ app.delete('/api/prescriptions/:id', async (req, res) => {
     res.status(500).json({ error: 'Prescription delete nahi ho saki' });
   }
 });
+// --- OTP ENDPOINTS ---
+
+// Send OTP
+app.post('/api/otp/send', async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: 'Email is required' });
+
+  try {
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+    await prisma.otpVerification.upsert({
+      where: { email },
+      create: { email, code: otpCode, expiresAt },
+      update: { code: otpCode, expiresAt }
+    });
+
+    const emailSent = await sendOtpEmail(email, otpCode);
+    if (emailSent) {
+      res.json({ success: true, message: 'OTP sent successfully' });
+    } else {
+      res.status(500).json({ error: 'Failed to send OTP email' });
+    }
+  } catch (error) {
+    console.error("OTP Send Error:", error);
+    res.status(500).json({ error: 'Failed to process OTP' });
+  }
+});
+
+// Verify OTP
+app.post('/api/otp/verify', async (req, res) => {
+  const { email, code } = req.body;
+  if (!email || !code) return res.status(400).json({ error: 'Email and code are required' });
+
+  try {
+    const record = await prisma.otpVerification.findUnique({
+      where: { email }
+    });
+
+    if (!record) {
+      return res.status(400).json({ error: 'No OTP requested for this email' });
+    }
+
+    if (record.code !== code) {
+      return res.status(400).json({ error: 'Invalid OTP code' });
+    }
+
+    if (new Date() > record.expiresAt) {
+      return res.status(400).json({ error: 'OTP code has expired' });
+    }
+
+    // Delete record on successful verification so it can't be reused
+    await prisma.otpVerification.delete({
+      where: { email }
+    });
+
+    res.json({ success: true, message: 'Email verified successfully' });
+  } catch (error) {
+    console.error("OTP Verify Error:", error);
+    res.status(500).json({ error: 'Failed to verify OTP' });
+  }
+});
+
+// --- ADMIN ENDPOINTS ---
+
+// Get pending doctors
+app.get('/api/admin/pending-doctors', async (req, res) => {
+  try {
+    const pendingDoctors = await prisma.user.findMany({
+      where: {
+        role: 'DOCTOR',
+        doctorProfile: {
+          isApproved: false
+        }
+      },
+      include: {
+        doctorProfile: true
+      }
+    });
+    res.json(pendingDoctors);
+  } catch (error) {
+    console.error("Admin Pending Doctors Error:", error);
+    res.status(500).json({ error: 'Failed to fetch pending doctors' });
+  }
+});
+
+// Approve or reject a doctor
+app.put('/api/admin/approve-doctor/:doctorId', async (req, res) => {
+  const { doctorId } = req.params;
+  const { approved } = req.body;
+
+  try {
+    if (approved) {
+      const updatedProfile = await prisma.doctorProfile.update({
+        where: { userId: doctorId },
+        data: { isApproved: true }
+      });
+      res.json({ success: true, message: 'Doctor approved successfully', profile: updatedProfile });
+    } else {
+      // Rejection: delete user entirely
+      await prisma.user.delete({
+        where: { id: doctorId }
+      });
+      res.json({ success: true, message: 'Doctor request rejected and account deleted' });
+    }
+  } catch (error) {
+    console.error("Approve Doctor Error:", error);
+    res.status(500).json({ error: 'Failed to update doctor approval status' });
+  }
+});
+
 // Start Server (Conditional for Vercel)
 if (!process.env.VERCEL) {
   const PORT = process.env.PORT || 5000;
