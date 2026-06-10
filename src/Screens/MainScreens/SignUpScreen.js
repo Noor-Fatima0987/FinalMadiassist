@@ -27,6 +27,7 @@ export default function SignUpScreen({ navigation }) {
   const [contactNumber, setContactNumber] = useState("");
   const [address, setAddress] = useState("");
   const [errors, setErrors] = useState({});
+  const [isRegistering, setIsRegistering] = useState(false);
 
   // Role-specific fields
   const [specialization, setSpecialization] = useState("");
@@ -36,6 +37,7 @@ export default function SignUpScreen({ navigation }) {
   const [medicalHistory, setMedicalHistory] = useState("");
 
   const SignInHandler = () => {
+    if (isRegistering) return;
     navigation.navigate("Sign In");
   };
 
@@ -55,6 +57,7 @@ export default function SignUpScreen({ navigation }) {
   };
 
   const handleCreateAccount = async () => {
+    if (isRegistering) return;
     const newErrors = {};
 
     if (!fullName.trim()) newErrors.fullName = "Full name is required";
@@ -118,6 +121,7 @@ export default function SignUpScreen({ navigation }) {
 
     if (Object.keys(newErrors).length === 0) {
       let firebaseUser = null;
+      setIsRegistering(true);
       try {
         // 1. Firebase Auth mein user create karo
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -169,6 +173,8 @@ export default function SignUpScreen({ navigation }) {
           }
         }
         alert("Registration Error: " + error.message);
+      } finally {
+        setIsRegistering(false);
       }
     }
   };
@@ -245,7 +251,7 @@ export default function SignUpScreen({ navigation }) {
           ListFooterComponent={
             <>
               <SignInLink navigation={navigation} onPress={SignInHandler} />
-              <SubmitButton title="Create Account" onPress={handleCreateAccount} />
+              <SubmitButton title="Create Account" onPress={handleCreateAccount} isLoading={isRegistering} />
             </>
           }
         />

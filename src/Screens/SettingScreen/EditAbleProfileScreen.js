@@ -1,4 +1,4 @@
-﻿import React, { useContext, useState } from "react";
+import React, { useContext, useState } from "react";
 import { View, Text, ScrollView, StyleSheet, Alert, ActivityIndicator } from "react-native";
 import { UserContext } from "../../store/context/UserContext";
 
@@ -41,6 +41,7 @@ export default function EditableProfileScreen({ navigation }) {
         payload.doctorProfile = {
           specialty: editedUser.specialty || editedUser.specialization,
           experience: editedUser.experience,
+          licenseNo: editedUser.licenseNo,
           bio: editedUser.bio
         };
       } else if (user.role === "PATIENT") {
@@ -75,8 +76,8 @@ export default function EditableProfileScreen({ navigation }) {
 
   // Define the requested order of fields
   const getOrderedKeys = () => {
-    const baseFields = ["fullName", "email", "contactNumber", "gender", "address", "cnic", "role"];
-    const docFields = ["specialty", "experience", "bio"];
+    const baseFields = ["fullName", "email", "contactNumber", "gender", "cnic", "address", "role"];
+    const docFields = ["specialty", "experience", "licenseNo", "bio"];
     const patFields = ["age", "medicalHistory"];
 
     let ordered = [...baseFields];
@@ -94,7 +95,10 @@ export default function EditableProfileScreen({ navigation }) {
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView 
+      style={styles.scrollView} 
+      contentContainerStyle={styles.contentContainer}
+    >
       <Text style={styles.title}>Edit Profile</Text>
 
       {getOrderedKeys().map((key) => {
@@ -106,6 +110,7 @@ export default function EditableProfileScreen({ navigation }) {
         if (key === "contactNumber") label = "Phone Number";
         if (key === "fullName") label = "Full Name";
         if (key === "medicalHistory") label = "Medical History";
+        if (key === "licenseNo") label = "License Number";
 
         return (
           <View key={key} pointerEvents={isReadOnly ? "none" : "auto"} style={isReadOnly ? {opacity: 0.6} : {}}>
@@ -128,10 +133,13 @@ export default function EditableProfileScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  scrollView: {
     flex: 1,
-    padding: 20,
     backgroundColor: "#f7f7ff",
+  },
+  contentContainer: {
+    padding: 20,
+    paddingBottom: 50,
   },
   title: {
     fontSize: 26,

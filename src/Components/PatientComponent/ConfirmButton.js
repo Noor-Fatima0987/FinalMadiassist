@@ -10,7 +10,8 @@ const ConfirmButton = ({ disabled, onPress }) => {
         padding: 14,
         borderRadius: 8,
         alignItems: "center",
-        backgroundColor: "#4C39DB",
+        backgroundColor: disabled ? "#9e94f0" : pressed ? "#3b29c9" : "#4C39DB",
+        opacity: disabled ? 0.7 : 1,
       })}
     >
       <Text style={{ color: "#fff", fontWeight: "bold" }}>

@@ -98,7 +98,7 @@ const HomeDoctorScreen = ({ navigation }) => {
             </View>
             <View style={styles.patientInfo}>
               <Text style={styles.patientName}>{pendingApps[0].patient?.fullName || "Patient"}</Text>
-              <Text style={styles.patientDetail}>Age: {pendingApps[0].patient?.age || "N/A"} â€¢ Consultation</Text>
+              <Text style={styles.patientDetail}>Age: {pendingApps[0].patient?.age || "N/A"} • Consultation</Text>
             </View>
             <Pressable style={styles.startBtn} onPress={() => navigation.navigate('Sedular')}>
               <Text style={styles.startBtnText}>Start</Text>

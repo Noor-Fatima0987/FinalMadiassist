@@ -16,7 +16,6 @@ export default function SignInScreen({ navigation }) {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("");
   const [errors, setErrors] = useState({});
 
   function SignUpHandler() {
@@ -29,7 +28,6 @@ export default function SignInScreen({ navigation }) {
     if (!email.trim()) newErrors.email = "Email is required";
     if (!password.trim()) newErrors.password = "Password is required";
     else if (password.length < 8) newErrors.password = "Password must be at least 8 characters";
-    if (!role.trim()) newErrors.role = "Please select your role";
 
     setErrors(newErrors);
 
@@ -44,12 +42,6 @@ export default function SignInScreen({ navigation }) {
         const result = await response.json();
 
         if (response.ok) {
-          // Check if the role matches
-          if (result.role.toLowerCase() !== role.toLowerCase()) {
-            alert(`You are registered as a ${result.role}, not a ${role}.`);
-            return;
-          }
-
           saveUser(result);
           // Conditional rendering in Navigation.js handles the screen switch automatically.
         } else {
@@ -66,7 +58,6 @@ export default function SignInScreen({ navigation }) {
   const formFields = [
     { key: "email", label: "Email", value: email, onChange: setEmail, placeholder: "Enter your email", required: true, keyboardType: "email-address" },
     { key: "password", label: "Password", value: password, onChange: setPassword, placeholder: "Enter your password", required: true, secureTextEntry: true },
-    { key: "role", label: "Select Role", value: role, onChange: setRole, required: true, type: "role" },
   ];
 
   return (

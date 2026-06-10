@@ -115,11 +115,13 @@ app.put('/api/user/:firebaseId', async (req, res) => {
             create: { 
               specialty: doctorProfile.specialty || 'General', 
               experience: safeParseInt(doctorProfile.experience), 
+              licenseNo: doctorProfile.licenseNo || '',
               bio: doctorProfile.bio || '' 
             },
             update: { 
               specialty: doctorProfile.specialty, 
               experience: safeParseInt(doctorProfile.experience), 
+              licenseNo: doctorProfile.licenseNo,
               bio: doctorProfile.bio 
             }
           }

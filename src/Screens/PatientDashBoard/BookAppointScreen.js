@@ -50,12 +50,17 @@ const BookAppointmentScreen = ({ navigation }) => {
   // ---------------- ROUTE ----------------
   const route = useRoute();
 
-  // ---------------- GET SELECTED DOCTOR ----------------
+  // ---------------- RESET ON FOCUS & GET SELECTED DOCTOR ----------------
   useEffect(() => {
-    if (route.params?.doctor) {
-      setDoctor(route.params.doctor);
-    }
-  }, [route.params]);
+    const unsubscribe = navigation.addListener('focus', () => {
+      setDoctor(route.params?.doctor || null);
+      setDate(null);
+      setTime(null);
+      setContact("");
+    });
+
+    return unsubscribe;
+  }, [navigation, route.params]);
 
   // ---------------- CONFIRM LOGIC ----------------
   const handleConfirm = async () => {
