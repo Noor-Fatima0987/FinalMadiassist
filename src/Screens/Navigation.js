@@ -246,6 +246,7 @@ function Navigation() {
             <Stack.Screen name='Home' component={HomeScreen} options={{ headerShown: false }} />
             <Stack.Screen name='Sign In' component={SignInScreen} />
             <Stack.Screen name='Sign Up' component={SignUpScreen} />
+            <Stack.Screen name='Our Doctor' component={OurDoctorScreen} />
           </>
         ) : user.role === 'DOCTOR' ? (
           // Reverted for now (Admin dashboard commented out)

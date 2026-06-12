@@ -1,13 +1,15 @@
 import React, { useContext, useState, useEffect } from 'react';
-import { StyleSheet, Text, View, FlatList, SafeAreaView, Pressable } from 'react-native';
+import { StyleSheet, Text, View, FlatList, SafeAreaView, Pressable, Alert } from 'react-native';
 import { UserContext } from '../../store/context/UserContext';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 
 const BACKEND_URL = "https://mediassist-rho.vercel.app";
 
 const AppointmentDetialScreen = () => {
   const { user } = useContext(UserContext); // Removed appointments from context
   const [dbAppointments, setDbAppointments] = useState([]);
+  const navigation = useNavigation();
 
   useEffect(() => {
     const fetchAppointments = async () => {
@@ -21,8 +23,14 @@ const AppointmentDetialScreen = () => {
         console.error("Error fetching appointments:", error);
       }
     };
+
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchAppointments();
+    });
     fetchAppointments();
-  }, [user.id]);
+
+    return unsubscribe;
+  }, [navigation, user.id]);
 
   const handleCancelAppointment = async (appointmentId) => {
     try {
@@ -31,18 +39,30 @@ const AppointmentDetialScreen = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "Cancelled" })
       });
+      const result = await response.json();
       if (response.ok) {
         setDbAppointments(prev => prev.map(app => 
           app.id === appointmentId ? { ...app, status: "Cancelled" } : app
         ));
+        Alert.alert("Success", "Appointment cancelled successfully.");
+      } else {
+        Alert.alert("Error", result.error || "Failed to cancel appointment.");
       }
     } catch (error) {
       console.error("Error cancelling appointment:", error);
+      Alert.alert("Error", "Server se connect nahi ho saka.");
     }
   };
 
   const renderAppointmentItem = ({ item }) => {
-    const isCancellable = item.status === "Pending" || item.status === "Scheduled";
+    const isCancellable = (() => {
+      if (item.status !== "Pending" && item.status !== "Scheduled") return false;
+      if (!item.createdAt) return false;
+      const createdTime = new Date(item.createdAt).getTime();
+      const now = new Date().getTime();
+      const diffMinutes = (now - createdTime) / (1000 * 60);
+      return diffMinutes <= 15;
+    })();
     const isCancelled = item.status === "Cancelled";
 
     return (

@@ -211,6 +211,18 @@ app.put('/api/appointments/:id/status', async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
   try {
+    const appointment = await prisma.appointment.findUnique({ where: { id } });
+    if (!appointment) return res.status(404).json({ error: 'Appointment not found' });
+
+    if (status === 'Cancelled') {
+      const createdTime = new Date(appointment.createdAt).getTime();
+      const now = new Date().getTime();
+      const diffMinutes = (now - createdTime) / (1000 * 60);
+      if (diffMinutes > 15) {
+        return res.status(400).json({ error: 'Appointments can only be cancelled within 15 minutes of booking.' });
+      }
+    }
+
     const updatedAppointment = await prisma.appointment.update({
       where: { id },
       data: { status }
