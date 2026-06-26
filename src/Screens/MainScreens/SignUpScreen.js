@@ -9,6 +9,7 @@ import { auth } from "../../firebase/firebaseConfig";
 import { createUserWithEmailAndPassword, deleteUser } from "firebase/auth";
 import { UserContext } from "../../store/context/UserContext";
 import { moderateScale, platformFont } from "../../utils/responsive";
+import { parseTimeToMinutes } from "../../utils/doctorAvailability";
 
 const BACKEND_URL = "https://mediassist-rho.vercel.app";
 
@@ -33,6 +34,9 @@ export default function SignUpScreen({ navigation }) {
   const [specialization, setSpecialization] = useState("");
   const [licenseNo, setLicenseNo] = useState("");
   const [experience, setExperience] = useState("");
+  const [workingDays, setWorkingDays] = useState("");
+  const [workingHoursStart, setWorkingHoursStart] = useState("");
+  const [workingHoursEnd, setWorkingHoursEnd] = useState("");
   const [age, setAge] = useState("");
   const [medicalHistory, setMedicalHistory] = useState("");
 
@@ -108,6 +112,29 @@ export default function SignUpScreen({ navigation }) {
           newErrors.licenseNo = "License must be 7 digits (e.g., 12345-67 or 1234567)";
         }
       }
+
+      if (!workingDays.trim()) {
+        newErrors.workingDays = "Working days are required";
+      }
+
+      if (!workingHoursStart.trim()) {
+        newErrors.workingHoursStart = "Start time is required";
+      } else if (parseTimeToMinutes(workingHoursStart) === null) {
+        newErrors.workingHoursStart = "Please use a valid time format like 09:00 AM";
+      }
+
+      if (!workingHoursEnd.trim()) {
+        newErrors.workingHoursEnd = "End time is required";
+      } else {
+        const startMinutes = parseTimeToMinutes(workingHoursStart);
+        const endMinutes = parseTimeToMinutes(workingHoursEnd);
+
+        if (startMinutes === null || endMinutes === null) {
+          newErrors.workingHoursEnd = "Please use a valid time format like 09:00 AM";
+        } else if (endMinutes <= startMinutes) {
+          newErrors.workingHoursEnd = "End time must be later than start time";
+        }
+      }
     } else if (role === "patient") {
       if (!age.trim()) {
         newErrors.age = "Age is required";
@@ -141,6 +168,9 @@ export default function SignUpScreen({ navigation }) {
             specialization,
             experience,
             licenseNo,
+            workingDays,
+            workingHoursStart,
+            workingHoursEnd,
             age,
             medicalHistory,
             gender,
@@ -199,6 +229,9 @@ export default function SignUpScreen({ navigation }) {
       { id: "specialization", label: "Specialization", value: specialization, onChange: setSpecialization, placeholder: "Enter your specialization", required: true },
       { id: "experience", label: "Experience (Years)", value: experience, onChange: setExperience, placeholder: "e.g., 5", required: true, keyboardType: "numeric" },
       { id: "licenseNo", label: "License Number", value: licenseNo, onChange: setLicenseNo, placeholder: "License (e.g. 12345-67)", required: true, maxLength: 15 },
+      { id: "workingDays", label: "Working Days", value: workingDays, onChange: setWorkingDays, placeholder: "Mon, Tue, Wed, Thu, Fri", required: true },
+      { id: "workingHoursStart", label: "Working Hours Start", value: workingHoursStart, onChange: setWorkingHoursStart, placeholder: "09:00 AM", required: true },
+      { id: "workingHoursEnd", label: "Working Hours End", value: workingHoursEnd, onChange: setWorkingHoursEnd, placeholder: "05:00 PM", required: true },
     ];
     formFields.splice(6, 0, ...doctorFields);
   } else if (role === "patient") {

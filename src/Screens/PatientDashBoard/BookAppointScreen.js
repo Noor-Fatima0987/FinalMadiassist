@@ -7,8 +7,42 @@ import SelectDate from "../../Components/PatientComponent/SelectDate";
 import SelectTime from "../../Components/PatientComponent/SelectTime";
 import ContactDetails from "../../Components/PatientComponent/ContactDetails";
 import ConfirmButton from "../../Components/PatientComponent/ConfirmButton";
-import { doctorData } from "../../Data/DoctorData";
 import { UserContext } from "../../store/context/UserContext";
+import {
+  buildAvailabilityLabel,
+  isDateAllowed,
+  isTimeAllowed,
+  parseLegacyAvailabilityLabel,
+  parseWorkingDays,
+} from "../../utils/doctorAvailability";
+
+const normalizeDoctorForBooking = (doc) => {
+  if (!doc) return null;
+
+  const doctorProfile = doc.doctorProfile || {};
+  const legacyAvailability = parseLegacyAvailabilityLabel(
+    doc.availableTime || doctorProfile.availableTime || ""
+  );
+
+  const workingDays = parseWorkingDays(
+    doctorProfile.workingDays?.length ? doctorProfile.workingDays : legacyAvailability.workingDays || doc.workingDays || []
+  );
+  const workingHoursStart = doctorProfile.workingHoursStart || legacyAvailability.workingHoursStart || doc.workingHoursStart || null;
+  const workingHoursEnd = doctorProfile.workingHoursEnd || legacyAvailability.workingHoursEnd || doc.workingHoursEnd || null;
+
+  const availabilityLabel = buildAvailabilityLabel(workingDays, workingHoursStart, workingHoursEnd);
+
+  return {
+    ...doc,
+    fullName: doc.fullName || doc.name || "Doctor",
+    specialization: doc.specialization || doctorProfile.specialty || "General",
+    workingDays,
+    workingHoursStart,
+    workingHoursEnd,
+    availabilityLabel,
+    availableTime: doc.availableTime || availabilityLabel,
+  };
+};
 
 const BookAppointmentScreen = ({ navigation }) => {
   // ---------------- CONTEXT ----------------
@@ -34,10 +68,7 @@ const BookAppointmentScreen = ({ navigation }) => {
         const data = await response.json();
         if (response.ok) {
           // Format data to match what the screen expects
-          const formattedDoctors = data.map(doc => ({
-            ...doc,
-            specialization: doc.doctorProfile?.specialty || "General"
-          }));
+          const formattedDoctors = data.map((doc) => normalizeDoctorForBooking(doc));
           setDbDoctors(formattedDoctors);
         }
       } catch (error) {
@@ -53,7 +84,7 @@ const BookAppointmentScreen = ({ navigation }) => {
   // ---------------- RESET ON FOCUS & GET SELECTED DOCTOR ----------------
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
-      setDoctor(route.params?.doctor || null);
+      setDoctor(normalizeDoctorForBooking(route.params?.doctor || null));
       setDate(null);
       setTime(null);
       setContact("");
@@ -65,6 +96,26 @@ const BookAppointmentScreen = ({ navigation }) => {
   // ---------------- CONFIRM LOGIC ----------------
   const handleConfirm = async () => {
     if (isLoading) return; // Prevent double booking
+    if (!user?.id) {
+      Alert.alert("Error", "Please log in again before booking an appointment.");
+      return;
+    }
+
+    if (!doctor) {
+      Alert.alert("Error", "Please select a doctor.");
+      return;
+    }
+
+    if (!isDateAllowed(date, doctor.workingDays || [])) {
+      Alert.alert("Unavailable Date", "Please pick a date that matches the doctor's working days.");
+      return;
+    }
+
+    if (!isTimeAllowed(time, doctor.workingHoursStart, doctor.workingHoursEnd)) {
+      Alert.alert("Unavailable Time", "Please pick a time within the doctor's working hours.");
+      return;
+    }
+
     setIsLoading(true);
     try {
       const response = await fetch(`${BACKEND_URL}/api/appointments`, {
@@ -98,7 +149,9 @@ const BookAppointmentScreen = ({ navigation }) => {
     }
   };
 
-  const isDisabled = !doctor || !date || !time || !contact || isLoading;
+  const isDateValid = doctor ? isDateAllowed(date, doctor.workingDays || []) : false;
+  const isTimeValid = doctor ? isTimeAllowed(time, doctor.workingHoursStart, doctor.workingHoursEnd) : false;
+  const isDisabled = !doctor || !date || !time || !contact || !isDateValid || !isTimeValid || isLoading;
 
   // ---------------- UI ----------------
   return (
@@ -128,13 +181,18 @@ const BookAppointmentScreen = ({ navigation }) => {
                 renderItem={({ item }) => (
                   <Pressable
                     onPress={() => {
-                      setDoctor(item);
+                      setDoctor(normalizeDoctorForBooking(item));
+                      setDate(null);
+                      setTime(null);
                       setModalVisible(false);
                     }}
                     style={{ padding: 12, borderBottomWidth: 1, borderColor: "#ddd" }}
                   >
-                    <Text style={{ fontWeight: "bold" }}>{item.fullName}</Text>
+                    <Text style={{ fontWeight: "bold" }}>{item.fullName || item.name}</Text>
                     <Text>{item.specialization}</Text>
+                    <Text style={{ color: "#666", marginTop: 2 }}>
+                      {item.availabilityLabel || item.availableTime || "Availability not set"}
+                    </Text>
                   </Pressable>
                 )}
               />
@@ -151,6 +209,7 @@ const BookAppointmentScreen = ({ navigation }) => {
         {/* Select Date (Calendar) */}
         <SelectDate
           selectedDate={date}
+          allowedDays={doctor?.workingDays || []}
           onSelect={(selectedDate) => {
             setDate(selectedDate);
             // setTime(null); // Optional: Keep time or reset? Removing reset to allow any order selection.
@@ -160,6 +219,8 @@ const BookAppointmentScreen = ({ navigation }) => {
         {/* Select Time */}
         <SelectTime
           selectedTime={time}
+          workingHoursStart={doctor?.workingHoursStart}
+          workingHoursEnd={doctor?.workingHoursEnd}
           onSelect={(selectedTime) => setTime(selectedTime)}
         />
 
@@ -201,4 +262,3 @@ const styles = StyleSheet.create({
   },
 
 })
-

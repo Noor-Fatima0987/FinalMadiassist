@@ -39,6 +39,9 @@ model DoctorProfile {
   experience Int?     // Years of experience
   bio        String?
   licenseNo  String?
+  workingDays String[] @default([])
+  workingHoursStart String?
+  workingHoursEnd String?
   isApproved Boolean  @default(false)
   
   // Relation back to User

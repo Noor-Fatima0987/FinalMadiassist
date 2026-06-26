@@ -1,5 +1,10 @@
 ﻿import React, { useState, useEffect } from "react";
 import { View, Text, FlatList, StyleSheet } from "react-native";
+import {
+  buildAvailabilityLabel,
+  parseLegacyAvailabilityLabel,
+  parseWorkingDays,
+} from "../../utils/doctorAvailability";
 
 const BACKEND_URL = "https://mediassist-rho.vercel.app";
 
@@ -14,7 +19,10 @@ function OurDoctorScreen() {
         if (response.ok) {
           const formattedDoctors = data.map(doc => ({
             ...doc,
-            specialization: doc.doctorProfile?.specialty || "General"
+            specialization: doc.doctorProfile?.specialty || "General",
+            workingDays: parseWorkingDays(doc.doctorProfile?.workingDays || doc.workingDays || []),
+            workingHoursStart: doc.doctorProfile?.workingHoursStart || parseLegacyAvailabilityLabel(doc.availableTime || "").workingHoursStart,
+            workingHoursEnd: doc.doctorProfile?.workingHoursEnd || parseLegacyAvailabilityLabel(doc.availableTime || "").workingHoursEnd,
           }));
           setDbDoctors(formattedDoctors);
         }
@@ -33,8 +41,11 @@ function OurDoctorScreen() {
         renderItem={({ item }) => (
           <View style={styles.card}>
             <View style={styles.info}>
-              <Text style={styles.name}>{item.fullName}</Text>
+              <Text style={styles.name}>{item.fullName || item.name}</Text>
               <Text style={styles.spec}>{item.specialization}</Text>
+              <Text style={styles.detail}>
+                {buildAvailabilityLabel(item.workingDays, item.workingHoursStart, item.workingHoursEnd) || "Availability not set"}
+              </Text>
               <Text style={styles.detail}>Email: {item.email}</Text>
             </View>
           </View>
@@ -89,4 +100,3 @@ const styles = StyleSheet.create({
     color: "white",
   },
 });
-

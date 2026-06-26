@@ -6,6 +6,9 @@ export const doctorData = [
     experience: "10 years",
     contact: "+92 300 4567890",
     location: "Lahore, Pakistan",
+    workingDays: [1, 2, 3, 4, 5],
+    workingHoursStart: "9:00 AM",
+    workingHoursEnd: "4:00 PM",
     availableTime: "Mon - Fri | 9:00 AM - 4:00 PM",
   },
   {
@@ -15,6 +18,9 @@ export const doctorData = [
     experience: "8 years",
     contact: "+92 333 9876543",
     location: "Karachi, Pakistan",
+    workingDays: [2, 3, 4, 5, 6],
+    workingHoursStart: "10:00 AM",
+    workingHoursEnd: "6:00 PM",
     availableTime: "Tue - Sat | 10:00 AM - 6:00 PM",
   },
   {
@@ -24,6 +30,9 @@ export const doctorData = [
     experience: "6 years",
     contact: "+92 321 6677889",
     location: "Islamabad, Pakistan",
+    workingDays: [1, 2, 3, 4, 5],
+    workingHoursStart: "8:30 AM",
+    workingHoursEnd: "3:00 PM",
     availableTime: "Mon - Fri | 8:30 AM - 3:00 PM",
   },
   {
@@ -33,6 +42,9 @@ export const doctorData = [
     experience: "12 years",
     contact: "+92 345 2233445",
     location: "Faisalabad, Pakistan",
+    workingDays: [3, 4, 5, 6, 0],
+    workingHoursStart: "9:00 AM",
+    workingHoursEnd: "5:00 PM",
     availableTime: "Wed - Sun | 9:00 AM - 5:00 PM",
   },
   {
@@ -42,6 +54,9 @@ export const doctorData = [
     experience: "9 years",
     contact: "+92 312 9988776",
     location: "Rawalpindi, Pakistan",
+    workingDays: [1, 2, 3, 4, 5],
+    workingHoursStart: "11:00 AM",
+    workingHoursEnd: "7:00 PM",
     availableTime: "Mon - Fri | 11:00 AM - 7:00 PM",
   },
   {
@@ -51,6 +66,9 @@ export const doctorData = [
     experience: "7 years",
     contact: "+92 301 5544332",
     location: "Multan, Pakistan",
+    workingDays: [2, 3, 4, 5, 6],
+    workingHoursStart: "9:30 AM",
+    workingHoursEnd: "4:30 PM",
     availableTime: "Tue - Sat | 9:30 AM - 4:30 PM",
   },
   {
@@ -60,6 +78,9 @@ export const doctorData = [
     experience: "11 years",
     contact: "+92 341 7788990",
     location: "Hyderabad, Pakistan",
+    workingDays: [1, 2, 3, 4, 5, 6],
+    workingHoursStart: "8:00 AM",
+    workingHoursEnd: "2:00 PM",
     availableTime: "Mon - Sat | 8:00 AM - 2:00 PM",
   },
 ];

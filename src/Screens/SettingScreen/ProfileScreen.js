@@ -42,6 +42,20 @@ export default function ProfileScreen({ navigation }) {
             label="License Number"
             value={user.doctorProfile?.licenseNo || "N/A"}
           />
+          <ProfileField
+            label="Working Days"
+            value={Array.isArray(user.doctorProfile?.workingDays) && user.doctorProfile.workingDays.length > 0
+              ? user.doctorProfile.workingDays.join(", ")
+              : "N/A"}
+          />
+          <ProfileField
+            label="Working Hours"
+            value={
+              user.doctorProfile?.workingHoursStart && user.doctorProfile?.workingHoursEnd
+                ? `${user.doctorProfile.workingHoursStart} - ${user.doctorProfile.workingHoursEnd}`
+                : "N/A"
+            }
+          />
         </>
       )}
 
