@@ -1,6 +1,7 @@
 import React, { useContext, useState } from "react";
 import { View, Text, ScrollView, StyleSheet, Alert, ActivityIndicator } from "react-native";
 import { UserContext } from "../../store/context/UserContext";
+import { parseTimeToMinutes } from "../../utils/doctorAvailability";
 
 import EditableField from "../../Components/EditProfileComponent/EidtableField";
 import SaveButton from "../../Components/EditProfileComponent/SaveButton";
@@ -9,12 +10,20 @@ const BACKEND_URL = "https://mediassist-rho.vercel.app";
 
 export default function EditableProfileScreen({ navigation }) {
   const { user, saveUser } = useContext(UserContext);
+  const isDoctor = user.role === "DOCTOR" || user.role === "doctor";
   
   // Flatten the user object into a single flat state for easy editing
   const [editedUser, setEditedUser] = useState({
     ...user,
     ...(user.doctorProfile || {}),
-    ...(user.patientProfile || {})
+    ...(user.patientProfile || {}),
+    ...(isDoctor ? {
+      workingDays: Array.isArray(user.doctorProfile?.workingDays)
+        ? user.doctorProfile.workingDays.join(", ")
+        : user.doctorProfile?.workingDays || "",
+      workingHoursStart: user.doctorProfile?.workingHoursStart || "",
+      workingHoursEnd: user.doctorProfile?.workingHoursEnd || "",
+    } : {})
   });
   
   const [isSaving, setIsSaving] = useState(false);
@@ -26,6 +35,23 @@ export default function EditableProfileScreen({ navigation }) {
   const handleSave = async () => {
     setIsSaving(true);
     try {
+      if (isDoctor) {
+        const startMinutes = parseTimeToMinutes(editedUser.workingHoursStart);
+        const endMinutes = parseTimeToMinutes(editedUser.workingHoursEnd);
+
+        if (!editedUser.workingDays?.toString().trim()) {
+          Alert.alert("Error", "Working days are required for doctors.");
+          setIsSaving(false);
+          return;
+        }
+
+        if (startMinutes === null || endMinutes === null || endMinutes <= startMinutes) {
+          Alert.alert("Error", "Please enter a valid working hours range.");
+          setIsSaving(false);
+          return;
+        }
+      }
+
       // Re-pack nested profile objects before sending to backend
       const payload = {
         fullName: editedUser.fullName,
@@ -37,14 +63,17 @@ export default function EditableProfileScreen({ navigation }) {
         role: editedUser.role,
       };
 
-      if (user.role === "DOCTOR") {
+      if (isDoctor) {
         payload.doctorProfile = {
           specialty: editedUser.specialty || editedUser.specialization,
           experience: editedUser.experience,
           licenseNo: editedUser.licenseNo,
-          bio: editedUser.bio
+          bio: editedUser.bio,
+          workingDays: editedUser.workingDays,
+          workingHoursStart: editedUser.workingHoursStart,
+          workingHoursEnd: editedUser.workingHoursEnd
         };
-      } else if (user.role === "PATIENT") {
+      } else if (user.role === "PATIENT" || user.role === "patient") {
         payload.patientProfile = {
           age: editedUser.age,
           medicalHistory: editedUser.medicalHistory
@@ -77,12 +106,12 @@ export default function EditableProfileScreen({ navigation }) {
   // Define the requested order of fields
   const getOrderedKeys = () => {
     const baseFields = ["fullName", "email", "contactNumber", "gender", "cnic", "address", "role"];
-    const docFields = ["specialty", "experience", "licenseNo", "bio"];
+    const docFields = ["specialty", "experience", "licenseNo", "workingDays", "workingHoursStart", "workingHoursEnd", "bio"];
     const patFields = ["age", "medicalHistory"];
 
     let ordered = [...baseFields];
-    if (user.role === "DOCTOR") ordered = [...ordered, ...docFields];
-    if (user.role === "PATIENT") ordered = [...ordered, ...patFields];
+    if (isDoctor) ordered = [...ordered, ...docFields];
+    if (user.role === "PATIENT" || user.role === "patient") ordered = [...ordered, ...patFields];
 
     // Merge any other keys that might exist but aren't in our ordered list (excluding system keys)
     const systemKeys = ["id", "firebaseId", "password", "createdAt", "updatedAt", "doctorProfile", "patientProfile", "userId"];
@@ -111,6 +140,9 @@ export default function EditableProfileScreen({ navigation }) {
         if (key === "fullName") label = "Full Name";
         if (key === "medicalHistory") label = "Medical History";
         if (key === "licenseNo") label = "License Number";
+        if (key === "workingDays") label = "Working Days";
+        if (key === "workingHoursStart") label = "Working Hours Start";
+        if (key === "workingHoursEnd") label = "Working Hours End";
 
         return (
           <View key={key} pointerEvents={isReadOnly ? "none" : "auto"} style={isReadOnly ? {opacity: 0.6} : {}}>

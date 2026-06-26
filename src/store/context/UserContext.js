@@ -164,6 +164,9 @@ export const UserProvider = ({ children }) => {
       email: "ayesha.khan@mediassist.com",
       experience: "10 years",
       location: "Lahore, Pakistan",
+      workingDays: [1, 2, 3, 4, 5],
+      workingHoursStart: "9:00 AM",
+      workingHoursEnd: "4:00 PM",
       availableTime: "Mon - Fri | 9:00 AM - 4:00 PM"
     },
     {
@@ -175,6 +178,9 @@ export const UserProvider = ({ children }) => {
       email: "ahmed.khan@mediassist.com",
       experience: "8 years",
       location: "Karachi, Pakistan",
+      workingDays: [2, 3, 4, 5, 6],
+      workingHoursStart: "10:00 AM",
+      workingHoursEnd: "6:00 PM",
       availableTime: "Tue - Sat | 10:00 AM - 6:00 PM"
     }
   ]);

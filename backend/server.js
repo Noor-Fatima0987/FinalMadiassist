@@ -5,6 +5,12 @@ const { Pool } = require('pg');
 const { PrismaPg } = require('@prisma/adapter-pg');
 require('dotenv').config();
 const { sendOtpEmail } = require('./utils/mailer');
+const {
+  parseWorkingDays,
+  parseTimeToMinutes,
+  isDateAllowed,
+  isTimeAllowed,
+} = require('./utils/doctorAvailability');
 
 const app = express();
 
@@ -31,7 +37,38 @@ app.get('/api/test', (req, res) => {
 // Signup Route
 app.post('/api/signup', async (req, res) => {
   console.log("Signup attempt for:", req.body.email);
-  const { firebaseId, email, fullName, role, specialization, experience, licenseNo, age, medicalHistory, contactNumber, cnic, gender, address } = req.body;
+  const {
+    firebaseId,
+    email,
+    fullName,
+    role,
+    specialization,
+    experience,
+    licenseNo,
+    age,
+    medicalHistory,
+    contactNumber,
+    cnic,
+    gender,
+    address,
+    workingDays,
+    workingHoursStart,
+    workingHoursEnd,
+  } = req.body;
+
+  const normalizedWorkingDays = parseWorkingDays(workingDays);
+  const startMinutes = parseTimeToMinutes(workingHoursStart);
+  const endMinutes = parseTimeToMinutes(workingHoursEnd);
+
+  if (role && role.toLowerCase() === 'doctor') {
+    if (normalizedWorkingDays.length === 0) {
+      return res.status(400).json({ error: 'Working days are required for doctors' });
+    }
+
+    if (startMinutes === null || endMinutes === null || endMinutes <= startMinutes) {
+      return res.status(400).json({ error: 'Please provide a valid working hours range' });
+    }
+  }
 
   try {
     const newUser = await prisma.user.create({
@@ -49,6 +86,9 @@ app.post('/api/signup', async (req, res) => {
             specialty: specialization || 'General',
             experience: experience ? parseInt(experience) : 0,
             licenseNo: licenseNo || '',
+            workingDays: normalizedWorkingDays,
+            workingHoursStart: workingHoursStart || null,
+            workingHoursEnd: workingHoursEnd || null,
             isApproved: false
           }
         } : undefined,
@@ -102,6 +142,36 @@ app.put('/api/user/:firebaseId', async (req, res) => {
       return isNaN(parsed) ? null : parsed;
     };
 
+    const parsedWorkingDays = parseWorkingDays(doctorProfile?.workingDays);
+    const startMinutes = parseTimeToMinutes(doctorProfile?.workingHoursStart);
+    const endMinutes = parseTimeToMinutes(doctorProfile?.workingHoursEnd);
+
+    if (user.role === 'DOCTOR' && doctorProfile) {
+      if (parsedWorkingDays.length === 0 && (doctorProfile.workingDays !== undefined && doctorProfile.workingDays !== null)) {
+        return res.status(400).json({ error: 'Working days are required for doctors' });
+      }
+
+      if (
+        (doctorProfile.workingHoursStart || doctorProfile.workingHoursEnd) &&
+        (startMinutes === null || endMinutes === null || endMinutes <= startMinutes)
+      ) {
+        return res.status(400).json({ error: 'Please provide a valid working hours range' });
+      }
+    }
+
+    const doctorAvailabilityPatch = {};
+    if (doctorProfile) {
+      if (doctorProfile.workingDays !== undefined) {
+        doctorAvailabilityPatch.workingDays = parseWorkingDays(doctorProfile.workingDays);
+      }
+      if (doctorProfile.workingHoursStart !== undefined) {
+        doctorAvailabilityPatch.workingHoursStart = doctorProfile.workingHoursStart || null;
+      }
+      if (doctorProfile.workingHoursEnd !== undefined) {
+        doctorAvailabilityPatch.workingHoursEnd = doctorProfile.workingHoursEnd || null;
+      }
+    }
+
     const updatedUser = await prisma.user.update({
       where: { firebaseId },
       data: {
@@ -116,13 +186,17 @@ app.put('/api/user/:firebaseId', async (req, res) => {
               specialty: doctorProfile.specialty || 'General', 
               experience: safeParseInt(doctorProfile.experience), 
               licenseNo: doctorProfile.licenseNo || '',
-              bio: doctorProfile.bio || '' 
+              bio: doctorProfile.bio || '',
+              workingDays: parseWorkingDays(doctorProfile.workingDays),
+              workingHoursStart: doctorProfile.workingHoursStart || null,
+              workingHoursEnd: doctorProfile.workingHoursEnd || null,
             },
             update: { 
               specialty: doctorProfile.specialty, 
               experience: safeParseInt(doctorProfile.experience), 
               licenseNo: doctorProfile.licenseNo,
-              bio: doctorProfile.bio 
+              bio: doctorProfile.bio,
+              ...doctorAvailabilityPatch,
             }
           }
         } : undefined,
@@ -167,6 +241,28 @@ app.get('/api/doctors', async (req, res) => {
 app.post('/api/appointments', async (req, res) => {
   const { patientId, doctorId, date, time, notes } = req.body;
   try {
+    const doctor = await prisma.user.findUnique({
+      where: { id: doctorId },
+      include: { doctorProfile: true }
+    });
+
+    if (!doctor || doctor.role !== 'DOCTOR') {
+      return res.status(404).json({ error: 'Doctor not found' });
+    }
+
+    const doctorProfile = doctor.doctorProfile;
+    const workingDays = doctorProfile?.workingDays || [];
+    const workingHoursStart = doctorProfile?.workingHoursStart || null;
+    const workingHoursEnd = doctorProfile?.workingHoursEnd || null;
+
+    if (!isDateAllowed(date, workingDays)) {
+      return res.status(400).json({ error: 'Selected date is outside the doctor working days.' });
+    }
+
+    if (!isTimeAllowed(time, workingHoursStart, workingHoursEnd)) {
+      return res.status(400).json({ error: 'Selected time is outside the doctor working hours.' });
+    }
+
     const newAppointment = await prisma.appointment.create({
       data: {
         patientId,

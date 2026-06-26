@@ -1,11 +1,34 @@
-import React, { useState } from "react";
-import { View, Text, Pressable, Modal } from "react-native";
+import React, { useEffect, useMemo, useState } from "react";
+import { View, Text, Pressable, Modal, Alert } from "react-native";
 import { Calendar } from "react-native-calendars";
+import { getLocalDateString, getMonthMarkedDates } from "../../utils/doctorAvailability";
 
-const SelectDate = ({ selectedDate, onSelect }) => {
+const SelectDate = ({ selectedDate, onSelect, allowedDays = [] }) => {
   const [modalVisible, setModalVisible] = useState(false);
+  const [visibleMonth, setVisibleMonth] = useState(() => {
+    const baseDate = selectedDate ? new Date(`${selectedDate}T12:00:00`) : new Date();
+    return {
+      year: baseDate.getFullYear(),
+      month: baseDate.getMonth() + 1,
+    };
+  });
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = getLocalDateString();
+
+  useEffect(() => {
+    if (!selectedDate) return;
+    const baseDate = new Date(`${selectedDate}T12:00:00`);
+    if (Number.isNaN(baseDate.getTime())) return;
+    setVisibleMonth({
+      year: baseDate.getFullYear(),
+      month: baseDate.getMonth() + 1,
+    });
+  }, [selectedDate]);
+
+  const markedDates = useMemo(
+    () => getMonthMarkedDates(visibleMonth.year, visibleMonth.month, allowedDays, selectedDate),
+    [visibleMonth, allowedDays, selectedDate]
+  );
 
   return (
     <View style={{ marginBottom: 16 }}>
@@ -30,15 +53,25 @@ const SelectDate = ({ selectedDate, onSelect }) => {
             <Text style={{ fontWeight: "bold", fontSize: 18, marginBottom: 12, textAlign: "center" }}>Select Appointment Date</Text>
 
             <Calendar
+              current={`${visibleMonth.year}-${String(visibleMonth.month).padStart(2, "0")}-01`}
+              onMonthChange={(monthInfo) => setVisibleMonth({ year: monthInfo.year, month: monthInfo.month })}
+              markedDates={markedDates}
+              disableAllTouchEventsForDisabledDays
               onDayPress={(day) => {
+                if (allowedDays.length > 0) {
+                  const selectedDay = new Date(`${day.dateString}T12:00:00`).getDay();
+                  if (!allowedDays.includes(selectedDay)) {
+                    Alert.alert(
+                      "Unavailable Date",
+                      "This doctor is not available on the selected day."
+                    );
+                    return;
+                  }
+                }
                 onSelect(day.dateString);
                 setModalVisible(false);
               }}
               minDate={today}
-              markedDates={{
-                [selectedDate]: { selected: true, selectedColor: "#4caf50" },
-                [today]: { marked: true, dotColor: "#4caf50" }
-              }}
               theme={{
                 selectedDayBackgroundColor: "#4caf50",
                 todayTextColor: "#4caf50",
@@ -60,4 +93,3 @@ const SelectDate = ({ selectedDate, onSelect }) => {
 };
 
 export default SelectDate;
-

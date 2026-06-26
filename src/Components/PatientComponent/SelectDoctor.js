@@ -16,7 +16,7 @@ const SelectDoctor = ({ onPress, selectedDoctor }) => {
           backgroundColor: "#eee",
         }}
       >
-        <Text>{selectedDoctor ? selectedDoctor.name : "Select Doctor"}</Text>
+        <Text>{selectedDoctor ? (selectedDoctor.fullName || selectedDoctor.name) : "Select Doctor"}</Text>
       </Pressable>
     </View>
   );
