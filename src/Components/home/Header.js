@@ -1,8 +1,10 @@
 import { View, Image, StyleSheet } from "react-native";
 import PrassableCode from "../home/PrassableCode";
 import { moderateScale } from "../../utils/responsive";
+import { useTheme } from "@shopify/restyle";
 
 function Header({ navigation }) {
+  const { colors } = useTheme();
 
   function handleSignUp() {
     navigation.navigate("Sign Up");
@@ -11,16 +13,16 @@ function Header({ navigation }) {
   return (
     <View style={styles.container}>
       <Image
-        source={require("../../../assets/assets/MediAssistLogo.jpeg")}
+        source={require("../../../assets/assets/MediAssistLogo.png")}
         style={styles.logo}
         resizeMode="contain"
       />
 
       <PrassableCode
         textStyle={{
-          color: "#180991ff",
+          color: colors.primary,
           borderBottomWidth: 2,
-          borderBottomColor: "#180991ff",
+          borderBottomColor: colors.primary,
         }}
         mainStyle={{ margin: 0 }}
         onPress={handleSignUp}

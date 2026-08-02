@@ -8,6 +8,7 @@ import SelectTime from "../../Components/PatientComponent/SelectTime";
 import ContactDetails from "../../Components/PatientComponent/ContactDetails";
 import ConfirmButton from "../../Components/PatientComponent/ConfirmButton";
 import { UserContext } from "../../store/context/UserContext";
+import { useTheme } from "@shopify/restyle";
 import {
   buildAvailabilityLabel,
   isDateAllowed,
@@ -45,6 +46,7 @@ const normalizeDoctorForBooking = (doc) => {
 };
 
 const BookAppointmentScreen = ({ navigation }) => {
+  const { colors } = useTheme();
   // ---------------- CONTEXT ----------------
   const { user } = useContext(UserContext); // Removed addAppointment and doctors from Context
 
@@ -155,10 +157,10 @@ const BookAppointmentScreen = ({ navigation }) => {
 
   // ---------------- UI ----------------
   return (
-    <ScrollView style={{ flex: 1 }}>
+    <ScrollView style={{ flex: 1, backgroundColor: colors.mainBackground }}>
 
-      <View style={styles.headerPadding}>
-        <Text style={styles.title}>Book Appointment</Text>
+      <View style={[styles.headerPadding, { backgroundColor: colors.cardBackground, borderBottomColor: colors.border }]}>
+        <Text style={[styles.title, { color: colors.primary }]}>Book Appointment</Text>
         {/* <Text style={styles.subtitle}>List of all your consultations</Text> */}
       </View>
 
@@ -173,8 +175,8 @@ const BookAppointmentScreen = ({ navigation }) => {
         {/* Doctor Modal */}
         <Modal visible={modalVisible} transparent animationType="slide">
           <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center" }}>
-            <View style={{ width: "90%", backgroundColor: "#fff", borderRadius: 12, padding: 16, maxHeight: "70%" }}>
-              <Text style={{ fontWeight: "bold", fontSize: 18, marginBottom: 12 }}>Select Doctor</Text>
+            <View style={{ width: "90%", backgroundColor: colors.cardBackground, borderRadius: 12, padding: 16, maxHeight: "70%", borderWidth: 1, borderColor: colors.border }}>
+              <Text style={{ fontWeight: "bold", fontSize: 18, marginBottom: 12, color: colors.mainText }}>Select Doctor</Text>
               <FlatList
                 data={dbDoctors}
                 keyExtractor={(item) => item.id}
@@ -186,18 +188,18 @@ const BookAppointmentScreen = ({ navigation }) => {
                       setTime(null);
                       setModalVisible(false);
                     }}
-                    style={{ padding: 12, borderBottomWidth: 1, borderColor: "#ddd" }}
+                    style={{ padding: 12, borderBottomWidth: 1, borderColor: colors.border }}
                   >
-                    <Text style={{ fontWeight: "bold" }}>{item.fullName || item.name}</Text>
-                    <Text>{item.specialization}</Text>
-                    <Text style={{ color: "#666", marginTop: 2 }}>
+                    <Text style={{ fontWeight: "bold", color: colors.mainText }}>{item.fullName || item.name}</Text>
+                    <Text style={{ color: colors.secondaryText }}>{item.specialization}</Text>
+                    <Text style={{ color: colors.secondaryText, marginTop: 2 }}>
                       {item.availabilityLabel || item.availableTime || "Availability not set"}
                     </Text>
                   </Pressable>
                 )}
               />
               <Pressable onPress={() => setModalVisible(false)} style={{ marginTop: 16, alignItems: "center" }}>
-                <Text style={{ color: "red" }}>Cancel</Text>
+                <Text style={{ color: colors.danger }}>Cancel</Text>
               </Pressable>
             </View>
           </View>

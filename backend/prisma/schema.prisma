@@ -9,7 +9,7 @@ datasource db {
 model User {
   id            String   @id @default(uuid())
   firebaseId    String?  @unique // To link with Firebase Auth later
-  email         String   @unique
+  email         String   
   fullName      String
   role          Role     @default(PATIENT)
   

@@ -4,9 +4,11 @@ import { UserContext } from "../../store/context/UserContext";
 import ProfileField from "../../Components/ProfileComponent/ProfileField";
 import EditButton from "../../Components/ProfileComponent/EditButton";
 import { moderateScale } from "../../utils/responsive";
+import { useTheme } from "@shopify/restyle";
 
 export default function ProfileScreen({ navigation }) {
   const { user } = useContext(UserContext);
+  const { colors } = useTheme();
 
   if (!user) {
     return null;
@@ -16,7 +18,7 @@ export default function ProfileScreen({ navigation }) {
   const isPatient = user.role === "PATIENT" || user.role === "patient";
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.mainBackground }]}>
       <ProfileField label="Full Name" value={user.fullName || "N/A"} />
       <ProfileField label="Email" value={user.email || "N/A"} />
       <ProfileField label="Contact Number" value={user.contactNumber || "N/A"} />
@@ -85,6 +87,5 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: moderateScale(20),
-    backgroundColor: "#fff",
   },
 });

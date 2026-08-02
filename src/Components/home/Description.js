@@ -1,10 +1,13 @@
 import { View, Text, StyleSheet } from "react-native";
 import { moderateScale, platformFont } from "../../utils/responsive";
+import { useTheme } from "@shopify/restyle";
 
 function Description() {
+  const { colors } = useTheme();
+
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>
+      <Text style={[styles.text, { color: colors.secondaryText }]}>
         MediAssist is a smart and reliable healthcare platform designed to
         connect patients and doctors seamlessly. Manage appointments, access
         medical records, receive prescriptions, and stay updated with your
@@ -25,7 +28,6 @@ const styles = StyleSheet.create({
   text: {
     fontSize: platformFont(moderateScale(18)), // responsive font
     textAlign: "center",
-    color: "#2c1ca4ff",
     lineHeight: moderateScale(25), // readable line height
   },
 });

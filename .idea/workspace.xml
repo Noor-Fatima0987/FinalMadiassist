@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="NONE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="befe7273-fb70-4ebe-b10b-09e62f7267a2" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/Components/SettingComponent/AppearanceOption.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/Screens/SettingScreen/AppearanceScreen.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/theme/ThemeModeContext.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/theme/index.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/theme/theme.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/App.js" beforeDir="false" afterPath="$PROJECT_DIR$/App.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app.json" beforeDir="false" afterPath="$PROJECT_DIR$/app.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/prisma/schema.prisma" beforeDir="false" afterPath="$PROJECT_DIR$/backend/prisma/schema.prisma" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/bun.lock" beforeDir="false" afterPath="$PROJECT_DIR$/bun.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Components/EditProfileComponent/SaveButton.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/Components/EditProfileComponent/SaveButton.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Components/NavigatioComponent/BackButton.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/Components/NavigatioComponent/BackButton.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Components/NavigatioComponent/HeaderMuen.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/Components/NavigatioComponent/HeaderMuen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Components/ProfileComponent/EditButton.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/Components/ProfileComponent/EditButton.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Components/ProfileComponent/ProfileField.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/Components/ProfileComponent/ProfileField.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Components/SettingComponent/AboutDropdown.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/Components/SettingComponent/AboutDropdown.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Components/SettingComponent/LogoutButton.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/Components/SettingComponent/LogoutButton.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Components/SettingComponent/NotificationToggle.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/Components/SettingComponent/NotificationToggle.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Components/SettingComponent/ProfileOption.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/Components/SettingComponent/ProfileOption.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Components/home/ActionButtons.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/Components/home/ActionButtons.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Components/home/Description.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/Components/home/Description.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Components/home/Header.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/Components/home/Header.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Components/home/PrassableCode.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/Components/home/PrassableCode.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Components/home/Tittle.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/Components/home/Tittle.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Screens/Navigation.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/Screens/Navigation.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Screens/SettingScreen/HomeSetting.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/Screens/SettingScreen/HomeSetting.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Screens/SettingScreen/ProfileScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/Screens/SettingScreen/ProfileScreen.js" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ClangdSettings">
+    <option name="formatViaClangd" value="false" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "associatedIndex": 7
+}]]></component>
+  <component name="ProjectId" id="3HMNQi6gkrZUal9XH5SYIJSL7fk" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.cidr.known.project.marker": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.readMode.enableVisualFormatting": "true",
+    "cf.first.check.clang-format": "false",
+    "cidr.known.project.marker": "true",
+    "git-widget-placeholder": "fix/FinnalTesting",
+    "kotlin-language-version-configured": "true"
+  }
+}]]></component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="befe7273-fb70-4ebe-b10b-09e62f7267a2" name="Changes" comment="" />
+      <created>1785673965510</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1785673965510</updated>
+    </task>
+    <servers />
+  </component>
+</project>

@@ -1,7 +1,10 @@
 import React from "react";
 import { Pressable, Text } from "react-native";
+import { useTheme } from "@shopify/restyle";
 
 const ConfirmButton = ({ disabled, onPress }) => {
+  const { colors } = useTheme();
+
   return (
     <Pressable
       onPress={onPress}
@@ -10,11 +13,11 @@ const ConfirmButton = ({ disabled, onPress }) => {
         padding: 14,
         borderRadius: 8,
         alignItems: "center",
-        backgroundColor: disabled ? "#9e94f0" : pressed ? "#3b29c9" : "#4C39DB",
+        backgroundColor: disabled ? colors.mutedIcon : pressed ? colors.primaryTint : colors.primary,
         opacity: disabled ? 0.7 : 1,
       })}
     >
-      <Text style={{ color: "#fff", fontWeight: "bold" }}>
+      <Text style={{ color: colors.white, fontWeight: "bold" }}>
         Confirm Appointment
       </Text>
     </Pressable>

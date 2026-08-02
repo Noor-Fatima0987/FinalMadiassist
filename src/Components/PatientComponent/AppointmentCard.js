@@ -1,21 +1,25 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTheme } from "@shopify/restyle";
 
-const AppointmentCard = ({ title, doctor, date, time, status }) => (
-  <View style={styles.card}>
+const AppointmentCard = ({ title, doctor, date, time, status }) => {
+  const { colors } = useTheme();
+
+  return (
+  <View style={[styles.card, { backgroundColor: colors.primary, shadowColor: colors.primary }]}>
     <View style={styles.header}>
       <View>
         <Text style={styles.title}>{title}</Text>
         <Text style={styles.doctorName}>{doctor}</Text>
         <Text style={styles.detailText}>{status || "General Consultation"}</Text>
       </View>
-      <View style={styles.iconCircle}>
-        <Ionicons name="medical" size={24} color="#fff" />
+      <View style={[styles.iconCircle, { backgroundColor: "rgba(255,255,255,0.18)" }]}>
+        <Ionicons name="medical" size={24} color={colors.white} />
       </View>
     </View>
 
-    <View style={styles.divider} />
+    <View style={[styles.divider, { backgroundColor: "rgba(255,255,255,0.15)" }]} />
 
     <View style={styles.footer}>
       <View style={styles.timeContainer}>
@@ -31,7 +35,8 @@ const AppointmentCard = ({ title, doctor, date, time, status }) => (
       )}
     </View>
   </View>
-);
+  );
+};
 
 const styles = StyleSheet.create({
   card: {
