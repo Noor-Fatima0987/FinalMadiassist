@@ -1,9 +1,12 @@
 import React from "react";
 import { Pressable, Text, StyleSheet } from "react-native";
+import { useTheme } from "@shopify/restyle";
 
 export default function SaveButton({ onPress }) {
+  const { colors } = useTheme();
+
   return (
-    <Pressable style={styles.button} onPress={onPress}>
+    <Pressable style={[styles.button, { backgroundColor: colors.primary }]} onPress={onPress}>
       <Text style={styles.text}>Save Changes</Text>
     </Pressable>
   );
@@ -11,7 +14,6 @@ export default function SaveButton({ onPress }) {
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: "#180991ff",
     paddingVertical: 14,
     borderRadius: 12,
     marginTop: 20,

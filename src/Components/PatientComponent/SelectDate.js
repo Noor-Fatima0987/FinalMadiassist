@@ -2,8 +2,10 @@ import React, { useEffect, useMemo, useState } from "react";
 import { View, Text, Pressable, Modal, Alert } from "react-native";
 import { Calendar } from "react-native-calendars";
 import { getLocalDateString, getMonthMarkedDates } from "../../utils/doctorAvailability";
+import { useTheme } from "@shopify/restyle";
 
 const SelectDate = ({ selectedDate, onSelect, allowedDays = [] }) => {
+  const { colors, borderRadii } = useTheme();
   const [modalVisible, setModalVisible] = useState(false);
   const [visibleMonth, setVisibleMonth] = useState(() => {
     const baseDate = selectedDate ? new Date(`${selectedDate}T12:00:00`) : new Date();
@@ -32,7 +34,7 @@ const SelectDate = ({ selectedDate, onSelect, allowedDays = [] }) => {
 
   return (
     <View style={{ marginBottom: 16 }}>
-      <Text style={{ fontWeight: "bold", marginBottom: 8 , color:"#180991ff"  }}>
+      <Text style={{ fontWeight: "bold", marginBottom: 8 , color: colors.primary  }}>
         Select Date
       </Text>
 
@@ -40,17 +42,19 @@ const SelectDate = ({ selectedDate, onSelect, allowedDays = [] }) => {
         onPress={() => setModalVisible(true)}
         style={({ pressed }) => ({
           padding: 12,
-          borderRadius: 8,
-          backgroundColor: pressed ? "#ddd" : "#eee",
+          borderRadius: borderRadii.md,
+          backgroundColor: pressed ? colors.surfaceBackground : colors.cardBackground,
+          borderWidth: 1,
+          borderColor: colors.border,
         })}
       >
-        <Text>{selectedDate || "Choose Date (from Calendar)"}</Text>
+        <Text style={{ color: colors.mainText }}>{selectedDate || "Choose Date (from Calendar)"}</Text>
       </Pressable>
 
       <Modal visible={modalVisible} transparent animationType="slide">
         <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center" }}>
-          <View style={{ width: "90%", backgroundColor: "#fff", borderRadius: 12, padding: 16 }}>
-            <Text style={{ fontWeight: "bold", fontSize: 18, marginBottom: 12, textAlign: "center" }}>Select Appointment Date</Text>
+          <View style={{ width: "90%", backgroundColor: colors.cardBackground, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: colors.border }}>
+            <Text style={{ fontWeight: "bold", fontSize: 18, marginBottom: 12, textAlign: "center", color: colors.mainText }}>Select Appointment Date</Text>
 
             <Calendar
               current={`${visibleMonth.year}-${String(visibleMonth.month).padStart(2, "0")}-01`}
@@ -73,9 +77,15 @@ const SelectDate = ({ selectedDate, onSelect, allowedDays = [] }) => {
               }}
               minDate={today}
               theme={{
-                selectedDayBackgroundColor: "#4caf50",
-                todayTextColor: "#4caf50",
-                arrowColor: "#4caf50",
+                backgroundColor: colors.cardBackground,
+                calendarBackground: colors.cardBackground,
+                dayTextColor: colors.mainText,
+                monthTextColor: colors.mainText,
+                textDisabledColor: colors.mutedIcon,
+                selectedDayBackgroundColor: colors.accent,
+                selectedDayTextColor: colors.white,
+                todayTextColor: colors.accent,
+                arrowColor: colors.accent,
               }}
             />
 
@@ -83,7 +93,7 @@ const SelectDate = ({ selectedDate, onSelect, allowedDays = [] }) => {
               onPress={() => setModalVisible(false)}
               style={{ marginTop: 16, alignItems: "center", padding: 10 }}
             >
-              <Text style={{ color: "red", fontWeight: "bold" }}>Cancel</Text>
+              <Text style={{ color: colors.danger, fontWeight: "bold" }}>Cancel</Text>
             </Pressable>
           </View>
         </View>

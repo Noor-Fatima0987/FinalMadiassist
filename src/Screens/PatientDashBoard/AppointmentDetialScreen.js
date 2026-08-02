@@ -2,10 +2,12 @@ import React, { useContext, useState, useEffect } from 'react';
 import { StyleSheet, Text, View, FlatList, SafeAreaView, Pressable } from 'react-native';
 import { UserContext } from '../../store/context/UserContext';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '@shopify/restyle';
 
 const BACKEND_URL = "https://mediassist-rho.vercel.app";
 
 const AppointmentDetialScreen = () => {
+  const { colors } = useTheme();
   const { user } = useContext(UserContext); // Removed appointments from context
   const [dbAppointments, setDbAppointments] = useState([]);
 
@@ -46,37 +48,48 @@ const AppointmentDetialScreen = () => {
     const isCancelled = item.status === "Cancelled";
 
     return (
-      <View style={[styles.appointmentBox, isCancelled && { borderLeftColor: '#d32f2f', opacity: 0.8 }]}>
+      <View
+        style={[
+          styles.appointmentBox,
+          {
+            backgroundColor: colors.cardBackground,
+            borderLeftColor: isCancelled ? colors.danger : colors.primary,
+            borderColor: colors.border,
+            shadowColor: colors.shadow,
+          },
+          isCancelled && { opacity: 0.8 },
+        ]}
+      >
         <View style={styles.headerRow}>
-          <Ionicons name="calendar-outline" size={20} color={isCancelled ? '#d32f2f' : '#180991'} />
-          <Text style={[styles.dateText, isCancelled && { color: '#d32f2f' }]}>{item.date}</Text>
-          <View style={[styles.statusBadge, isCancelled && { backgroundColor: '#ffebee' }]}>
-            <Text style={[styles.statusText, isCancelled && { color: '#d32f2f' }]}>{item.status || 'Scheduled'}</Text>
+          <Ionicons name="calendar-outline" size={20} color={isCancelled ? colors.danger : colors.primary} />
+          <Text style={[styles.dateText, { color: colors.mainText }, isCancelled && { color: colors.danger }]}>{item.date}</Text>
+          <View style={[styles.statusBadge, { backgroundColor: isCancelled ? colors.selectionBackground : colors.primary }]}>
+            <Text style={[styles.statusText, { color: colors.white }, isCancelled && { color: colors.danger }]}>{item.status || 'Scheduled'}</Text>
           </View>
         </View>
 
-        <View style={styles.divider} />
+        <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
         <View style={styles.detailsContainer}>
           <View style={styles.infoRow}>
-            <Ionicons name="person-outline" size={18} color="#666" />
-            <Text style={styles.infoLabel}>Doctor:</Text>
-            <Text style={styles.infoValue}>{item.doctor?.fullName || "Unknown"}</Text>
+            <Ionicons name="person-outline" size={18} color={colors.mutedIcon} />
+            <Text style={[styles.infoLabel, { color: colors.secondaryText }]}>Doctor:</Text>
+            <Text style={[styles.infoValue, { color: colors.mainText }]}>{item.doctor?.fullName || "Unknown"}</Text>
           </View>
 
           <View style={styles.infoRow}>
-            <Ionicons name="time-outline" size={18} color="#666" />
-            <Text style={styles.infoLabel}>Time:</Text>
-            <Text style={styles.infoValue}>{item.time}</Text>
+            <Ionicons name="time-outline" size={18} color={colors.mutedIcon} />
+            <Text style={[styles.infoLabel, { color: colors.secondaryText }]}>Time:</Text>
+            <Text style={[styles.infoValue, { color: colors.mainText }]}>{item.time}</Text>
           </View>
 
           {isCancellable && (
             <Pressable 
-              style={styles.cancelBtn} 
+              style={[styles.cancelBtn, { backgroundColor: colors.selectionBackground }]} 
               onPress={() => handleCancelAppointment(item.id)}
             >
-              <Ionicons name="close-circle-outline" size={16} color="#d32f2f" />
-              <Text style={styles.cancelBtnText}>Cancel Appointment</Text>
+              <Ionicons name="close-circle-outline" size={16} color={colors.danger} />
+              <Text style={[styles.cancelBtnText, { color: colors.danger }]}>Cancel Appointment</Text>
             </Pressable>
           )}
         </View>
@@ -85,10 +98,10 @@ const AppointmentDetialScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.headerPadding}>
-        <Text style={styles.title}>Appointment History</Text>
-        <Text style={styles.subtitle}>List of all your consultations</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.mainBackground }]}>
+      <View style={[styles.headerPadding, { backgroundColor: colors.cardBackground, borderBottomColor: colors.border }]}>
+        <Text style={[styles.title, { color: colors.primary }]}>Appointment History</Text>
+        <Text style={[styles.subtitle, { color: colors.secondaryText }]}>List of all your consultations</Text>
       </View>
 
       <FlatList
@@ -98,8 +111,8 @@ const AppointmentDetialScreen = () => {
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Ionicons name="calendar-outline" size={60} color="#ccc" />
-            <Text style={styles.emptyText}>No appointments found</Text>
+            <Ionicons name="calendar-outline" size={60} color={colors.mutedIcon} />
+            <Text style={[styles.emptyText, { color: colors.secondaryText }]}>No appointments found</Text>
           </View>
         }
       />

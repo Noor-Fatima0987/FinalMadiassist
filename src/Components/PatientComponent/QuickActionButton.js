@@ -1,14 +1,17 @@
 import React from "react";
 import { Pressable, Text, StyleSheet, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTheme } from "@shopify/restyle";
 
 const QuickActionButton = ({ icon, text, onPress, color = "#180991" }) => {
+    const { colors } = useTheme();
+    const activeColor = color === "#180991" ? colors.primary : color;
     return (
         <Pressable style={styles.container} onPress={onPress}>
-            <View style={[styles.iconContainer, { backgroundColor: color + "15" }]}>
-                <Ionicons name={icon} size={24} color={color} />
+            <View style={[styles.iconContainer, { backgroundColor: `${activeColor}15` }]}>
+                <Ionicons name={icon} size={24} color={activeColor} />
             </View>
-            <Text style={styles.text}>{text}</Text>
+            <Text style={[styles.text, { color: colors.mainText }]}>{text}</Text>
         </Pressable>
     );
 };

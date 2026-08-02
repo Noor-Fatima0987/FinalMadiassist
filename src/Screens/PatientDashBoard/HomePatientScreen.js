@@ -5,9 +5,11 @@ import { UserContext } from "../../store/context/UserContext";
 import AppointmentCard from "../../Components/PatientComponent/AppointmentCard";
 import QuickActionButton from "../../Components/PatientComponent/QuickActionButton";
 import MedicationCard from "../../Components/PatientComponent/MedicationCard";
+import { useTheme } from "@shopify/restyle";
 
 const HomePatientScreen = ({ navigation }) => {
   const { user } = useContext(UserContext); // Removed prescriptions from context
+  const { colors } = useTheme();
   const [dbAppointments, setDbAppointments] = useState([]);
   const [dbPrescriptions, setDbPrescriptions] = useState([]);
 
@@ -51,34 +53,34 @@ const HomePatientScreen = ({ navigation }) => {
 
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.mainBackground }]}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
 
         {/* --- Header --- */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.greeting}>Good Day,</Text>
-            <Text style={styles.userName}>{user.fullName || "Patient"}</Text>
+            <Text style={[styles.greeting, { color: colors.secondaryText }]}>Good Day,</Text>
+            <Text style={[styles.userName, { color: colors.primary }]}>{user.fullName || "Patient"}</Text>
           </View>
-          <View style={styles.profileBadge}>
-            <Ionicons name="person" size={24} color="#180991" />
+          <View style={[styles.profileBadge, { backgroundColor: colors.cardBackground }]}>
+            <Ionicons name="person" size={24} color={colors.primary} />
           </View>
         </View>
 
         {/* --- Search Bar --- */}
         <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color="#999" style={{ marginRight: 10 }} />
+          <Ionicons name="search" size={20} color={colors.mutedIcon} style={{ marginRight: 10 }} />
           <TextInput
             placeholder="Search doctors, medicines..."
-            placeholderTextColor="#999"
-            style={styles.searchInput}
+            placeholderTextColor={colors.mutedIcon}
+            style={[styles.searchInput, { color: colors.mainText }]}
           />
         </View>
 
 
         {/* --- Next Appointment Section --- */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Up Next</Text>
+          <Text style={[styles.sectionTitle, { color: colors.primary }]}>Up Next</Text>
           {/* <Text style={styles.viewAll}>See All</Text> */}
         </View>
 
@@ -91,17 +93,17 @@ const HomePatientScreen = ({ navigation }) => {
             status={upcomingAppointment.status}
           />
         ) : (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>No upcoming appointments.</Text>
-            <Pressable onPress={() => navigation.navigate("BookAppointment")}>
-              <Text style={styles.bookNowText}>Book Now</Text>
+          <View style={[styles.emptyCard, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+            <Text style={[styles.emptyText, { color: colors.secondaryText }]}>No upcoming appointments.</Text>
+            <Pressable onPress={() => navigation.navigate("Book Appointment")}>
+              <Text style={[styles.bookNowText, { color: colors.primary }]}>Book Now</Text>
             </Pressable>
           </View>
         )}
 
 
         {/* --- Quick Actions --- */}
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Quick Actions</Text>
         <View style={styles.quickActionsGrid}>
           <QuickActionButton
             icon="calendar"
@@ -128,7 +130,7 @@ const HomePatientScreen = ({ navigation }) => {
 
         {/* --- Today's Medication --- */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Daily Medications</Text>
+          <Text style={[styles.sectionTitle, { color: colors.primary }]}>Daily Medications</Text>
         </View>
 
         {dailyMedications && dailyMedications.length > 0 ? (
@@ -136,7 +138,7 @@ const HomePatientScreen = ({ navigation }) => {
             <MedicationCard key={index} time={m.times[0]} dose={m.dosage + " - " + m.name} />
           ))
         ) : (
-          <Text style={{ color: '#999', fontStyle: 'italic' }}>No medications scheduled for today.</Text>
+          <Text style={{ color: colors.secondaryText, fontStyle: 'italic' }}>No medications scheduled for today.</Text>
         )}
 
 

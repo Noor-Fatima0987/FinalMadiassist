@@ -1,17 +1,35 @@
 import React, { useState } from "react";
-import { TouchableOpacity, View, Text, StyleSheet } from "react-native";
+import { Pressable, View, Text } from "react-native";
+import { useTheme } from "@shopify/restyle";
 
 export default function AboutDropdown() {
   const [open, setOpen] = useState(false);
+  const { colors, borderRadii, spacing } = useTheme();
+  const cardBg = colors.mainBackground === '#0F131A' ? '#171C24' : '#f2f1ff';
 
   return (
-    <View style={styles.box}>
-      <TouchableOpacity onPress={() => setOpen(!open)}>
-        <Text style={styles.text}>About Us ⌄</Text>
-      </TouchableOpacity>
-
+    <View
+      style={{
+        paddingVertical: 16,
+        paddingHorizontal: 18,
+        backgroundColor: cardBg,
+        borderRadius: borderRadii.md,
+        marginBottom: spacing.md,
+      }}
+    >
+      <Pressable
+        onPress={() => setOpen(!open)}
+        style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}
+      >
+        <Text style={{ fontSize: 18, color: colors.primary, fontWeight: "600" }}>
+          About Us
+        </Text>
+        <Text style={{ fontSize: 18, color: colors.mutedIcon, fontWeight: "600" }}>
+          {open ? "⌃" : "⌄"}
+        </Text>
+      </Pressable>
       {open && (
-        <Text style={styles.desc}>
+        <Text style={{ marginTop: 10, fontSize: 14, color: colors.secondaryText, lineHeight: 20 }}>
           MediAssist helps you manage appointments, medical records, reminders,
           and connect with doctors easily & securely.
         </Text>
@@ -19,24 +37,3 @@ export default function AboutDropdown() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  box: {
-    padding: 18,
-    backgroundColor: "#f2f1ff",
-    borderRadius: 12,
-    marginBottom: 15,
-  },
-  text: {
-    fontSize: 18,
-    color: "#150A95",
-    fontWeight: "600",
-  },
-  desc: {
-    marginTop: 10,
-    fontSize: 15,
-    color: "#333",
-    lineHeight: 22,
-  },
-});
-

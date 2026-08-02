@@ -2,6 +2,8 @@ import React, { useMemo, useState } from "react";
 import { View, Text, Pressable, Platform, Alert, StyleSheet } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { generateTimeSlots, isTimeAllowed } from "../../utils/doctorAvailability";
+import { useTheme } from "@shopify/restyle";
+import { useThemeMode } from "../../theme";
 
 const SelectTime = ({
   selectedTime,
@@ -10,6 +12,8 @@ const SelectTime = ({
   workingHoursEnd,
   slotInterval = 30,
 }) => {
+  const { colors } = useTheme();
+  const { resolvedMode } = useThemeMode();
   const [showPicker, setShowPicker] = useState(false);
   const [tempDate, setTempDate] = useState(new Date());
 
@@ -52,7 +56,7 @@ const SelectTime = ({
 
   return (
     <View style={{ marginBottom: 16 }}>
-      <Text style={{ fontWeight: "bold", marginBottom: 8, color: "#180991" }}>Select Time</Text>
+      <Text style={{ fontWeight: "bold", marginBottom: 8, color: colors.primary }}>Select Time</Text>
 
       {useSlotList ? (
         <View style={styles.slotGrid}>
@@ -64,6 +68,10 @@ const SelectTime = ({
                 onPress={() => onSelect(slot)}
                 style={({ pressed }) => [
                   styles.slotButton,
+                  {
+                    borderColor: isSelected ? colors.primary : colors.border,
+                    backgroundColor: isSelected ? colors.primary : colors.cardBackground,
+                  },
                   isSelected && styles.slotButtonActive,
                   pressed && !isSelected && styles.slotButtonPressed,
                 ]}
@@ -77,15 +85,17 @@ const SelectTime = ({
         </View>
       ) : (
         <>
-          <Pressable
+            <Pressable
             onPress={() => setShowPicker(true)}
             style={({ pressed }) => ({
               padding: 12,
               borderRadius: 8,
-              backgroundColor: pressed ? "#ddd" : "#eee",
+              backgroundColor: pressed ? colors.surfaceBackground : colors.cardBackground,
+              borderWidth: 1,
+              borderColor: colors.border,
             })}
           >
-            <Text>{selectedTime || "Choose Time"}</Text>
+            <Text style={{ color: colors.mainText }}>{selectedTime || "Choose Time"}</Text>
           </Pressable>
 
           {showPicker && (
@@ -94,6 +104,8 @@ const SelectTime = ({
               mode="time"
               is24Hour={false}
               display={Platform.OS === "ios" ? "spinner" : "default"}
+              themeVariant={Platform.OS === "ios" ? resolvedMode : undefined}
+              textColor={Platform.OS === "ios" ? colors.mainText : undefined}
               onChange={onTimeChange}
             />
           )}
@@ -117,23 +129,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#d9d9ea",
-    backgroundColor: "#fff",
     alignItems: "center",
   },
   slotButtonActive: {
-    backgroundColor: "#180991",
-    borderColor: "#180991",
   },
   slotButtonPressed: {
     opacity: 0.7,
   },
   slotText: {
-    color: "#333",
     fontWeight: "600",
     fontSize: 13,
   },
-  slotTextActive: {
-    color: "#fff",
-  },
+  slotTextActive: {},
 });

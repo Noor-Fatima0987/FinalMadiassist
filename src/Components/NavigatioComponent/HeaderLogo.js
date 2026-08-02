@@ -1,26 +1,22 @@
 import React from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { Image, StyleSheet } from 'react-native';
 
 const HeaderLogo = () => {
     return (
-        <View style={styles.container}>
-            <Image
-                source={require('../../../assets/assets/MediAssistLogo.jpeg')}
-                style={styles.logo}
-                resizeMode="contain"
-            />
-        </View>
+        <Image
+            source={require('../../../assets/assets/MediAssistLogo.png')}
+            style={styles.logo}
+            resizeMode="contain"
+        />
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        paddingLeft: 20,
-    },
     logo: {
-        width: 40,
-        height: 40,
-        borderRadius: 20, // Optional: make it circular if it looks better
+        width: 44,
+        height: 44,
+        marginLeft: 14,
+        backgroundColor: 'transparent',
     },
 });
 

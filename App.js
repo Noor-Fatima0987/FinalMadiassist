@@ -1,14 +1,25 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet } from 'react-native';
 import Navigation from './src/Screens/Navigation';
 import { UserProvider } from './src/store/context/UserContext';
 import { AlarmProvider } from './src/store/context/AlarmContext';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { registerForPushNotificationsAsync } from './src/utils/notificationUtils';
+import { ThemeModeProvider, useThemeMode } from './src/theme';
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
+
+function AppContent() {
+  const { resolvedMode } = useThemeMode();
+
+  return (
+    <>
+      <StatusBar style={resolvedMode === 'dark' ? 'light' : 'dark'} />
+      <Navigation />
+    </>
+  );
+}
 
 export default function App() {
   useEffect(() => {
@@ -26,18 +37,10 @@ export default function App() {
   return (
     <UserProvider>
       <AlarmProvider>
-        <StatusBar style="dark" />
-        <Navigation />
+        <ThemeModeProvider>
+          <AppContent />
+        </ThemeModeProvider>
       </AlarmProvider>
     </UserProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});

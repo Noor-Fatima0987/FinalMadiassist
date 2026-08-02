@@ -35,8 +35,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "8732d1e8-b720-41ba-bd0c-03a2d089235e"
+        "projectId": "d331b788-fe1c-4d0c-a314-988b97ce475b"
       }
-    }
+    },
+    "owner": "noor-fatima"
   }
 }

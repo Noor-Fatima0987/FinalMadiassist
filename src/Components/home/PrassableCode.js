@@ -1,7 +1,10 @@
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { moderateScale, platformFont } from "../../utils/responsive";
+import { useTheme } from "@shopify/restyle";
 
 function PrassableCode({ children, onPress, textStyle, mainStyle }) {
+  const { colors } = useTheme();
+
   return (
     <View style={mainStyle}>
       <Pressable
@@ -13,7 +16,7 @@ function PrassableCode({ children, onPress, textStyle, mainStyle }) {
         onPress={onPress}
       >
         <View style={[styles.buttonOuterStyle, mainStyle]}>
-          <Text style={[styles.textStyle, textStyle]}>{children}</Text>
+          <Text style={[styles.textStyle, { color: colors.white }, textStyle]}>{children}</Text>
         </View>
       </Pressable>
     </View>
@@ -33,7 +36,6 @@ const styles = StyleSheet.create({
   },
   textStyle: {
     fontSize: platformFont( moderateScale(18) ),
-    color: "white",
     textAlign: "center",
   },
   pressed: {

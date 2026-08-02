@@ -19,11 +19,13 @@ import { syncNotificationsWithMedications, registerForPushNotificationsAsync } f
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { AlarmContext } from '../../store/context/AlarmContext';
+import { useTheme } from '@shopify/restyle';
 
 const RemainderScreen = () => {
   const navigation = useNavigation();
   const { user } = useContext(UserContext) || {};
   const { triggerAlarm } = useContext(AlarmContext) || {};
+  const { colors } = useTheme();
   const [medications, setMedications] = useState([]);
   const [schedule, setSchedule] = useState([]);
   const [nextReminder, setNextReminder] = useState(null);
@@ -123,50 +125,67 @@ const RemainderScreen = () => {
     return (
       <View key={index} style={styles.timelineRow}>
         <View style={styles.timelineTimeColumn}>
-          <Text style={[styles.timelineTimeText, isPast && styles.textMuted]}>
+          <Text style={[styles.timelineTimeText, { color: isPast ? colors.mutedIcon : colors.mainText }]}>
             {formatTo12Hour(item.time || "00:00")}
           </Text>
         </View>
 
-        <View style={styles.timelineLineColumn}>
-          <View style={[
-            styles.timelineDot, 
-            isPast ? styles.dotPast : (isNext ? styles.dotNext : styles.dotFuture)
-          ]}>
-            {isPast && <Ionicons name="checkmark" size={12} color="#fff" />}
+          <View style={styles.timelineLineColumn}>
+            <View style={[
+              styles.timelineDot, 
+              isPast
+                ? [styles.dotPast, { backgroundColor: colors.success }]
+                : isNext
+                  ? [styles.dotNext, { backgroundColor: colors.primary }]
+                  : [styles.dotFuture, { backgroundColor: colors.border, borderColor: colors.mainBackground }]
+            ]}>
+            {isPast && <Ionicons name="checkmark" size={12} color={colors.white} />}
             {isNext && <View style={styles.dotPulse} />}
           </View>
           {index < schedule.length - 1 && (
-            <View style={[styles.timelineLine, isPast && styles.linePast]} />
+            <View style={[styles.timelineLine, { backgroundColor: isPast ? colors.success : colors.border }, isPast && styles.linePast]} />
           )}
         </View>
 
         <View style={styles.timelineCardColumn}>
           <View style={[
-            styles.timelineCard, 
-            isNext && styles.timelineCardNext,
-            isPast && styles.timelineCardPast
+            styles.timelineCard,
+            {
+              backgroundColor: colors.cardBackground,
+              borderColor: colors.border,
+              shadowColor: colors.shadow,
+            },
+            isNext && {
+              borderColor: colors.primary,
+              borderWidth: 2,
+              backgroundColor: colors.surfaceBackground,
+            },
+            isPast && {
+              backgroundColor: colors.cardBackground,
+              borderColor: colors.border,
+              opacity: 0.85,
+            }
           ]}>
             <View style={styles.cardHeader}>
-              <Text style={[styles.medName, isPast && styles.textMuted]} numberOfLines={1}>
+              <Text style={[styles.medName, { color: colors.mainText }, isPast && { color: colors.secondaryText }]} numberOfLines={1}>
                 {item.medicineName || 'Unknown Medicine'}
               </Text>
               {isNext && (
-                <View style={styles.nextBadge}>
-                  <Text style={styles.nextBadgeText}>UPCOMING</Text>
+                <View style={[styles.nextBadge, { backgroundColor: colors.selectionBackground }]}>
+                  <Text style={[styles.nextBadgeText, { color: colors.primary }]}>UPCOMING</Text>
                 </View>
               )}
             </View>
-            <Text style={[styles.medDosage, isPast && styles.textMuted]}>{item.dosage}</Text>
+            <Text style={[styles.medDosage, { color: colors.secondaryText }, isPast && { color: colors.mutedIcon }]}>{item.dosage}</Text>
             
             <View style={styles.medInstructionsRow}>
-              <View style={styles.instructionChip}>
-                <Ionicons name="restaurant-outline" size={12} color={isPast ? "#999" : "#00796B"} />
-                <Text style={[styles.instructionText, isPast && styles.textMuted]}>{item.instructions || 'As Directed'}</Text>
+              <View style={[styles.instructionChip, { backgroundColor: colors.surfaceBackground }]}>
+                <Ionicons name="restaurant-outline" size={12} color={isPast ? colors.mutedIcon : colors.success} />
+                <Text style={[styles.instructionText, { color: isPast ? colors.mutedIcon : colors.success }]}>{item.instructions || 'As Directed'}</Text>
               </View>
-              <View style={styles.instructionChip}>
-                <Ionicons name="calendar-outline" size={12} color={isPast ? "#999" : "#180991"} />
-                <Text style={[styles.instructionText, {color: isPast ? '#999' : '#180991'}]}>{item.duration || 'N/A'}</Text>
+              <View style={[styles.instructionChip, { backgroundColor: colors.surfaceBackground }]}>
+                <Ionicons name="calendar-outline" size={12} color={isPast ? colors.mutedIcon : colors.primary} />
+                <Text style={[styles.instructionText, {color: isPast ? colors.mutedIcon : colors.primary}]}>{item.duration || 'N/A'}</Text>
               </View>
             </View>
           </View>
@@ -177,29 +196,29 @@ const RemainderScreen = () => {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#180991" />
-        <Text style={styles.loadingText}>Loading your schedule...</Text>
+      <SafeAreaView style={[styles.loadingContainer, { backgroundColor: colors.mainBackground }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={[styles.loadingText, { color: colors.secondaryText }]}>Loading your schedule...</Text>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.mainBackground }]}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         
         <View style={styles.headerTitleContainer}>
-          <Text style={styles.pageTitle}>Medication Schedule</Text>
-          <Text style={styles.dateSubtitle}>{currentDate}</Text>
+          <Text style={[styles.pageTitle, { color: colors.primary }]}>Medication Schedule</Text>
+          <Text style={[styles.dateSubtitle, { color: colors.secondaryText }]}>{currentDate}</Text>
         </View>
         
         {/* Next Reminder Hero Card */}
         {nextReminder ? (
-          <View style={styles.heroCard}>
-            <View style={styles.heroBackground}>
+          <View style={[styles.heroCard, { backgroundColor: colors.primary, shadowColor: colors.primary }]}>
+            <View style={[styles.heroBackground, { backgroundColor: colors.primary }]}>
               <View style={styles.heroHeader}>
-                <View style={styles.heroIconBox}>
-                  <Ionicons name="alarm" size={24} color="#fff" />
+                <View style={[styles.heroIconBox, { backgroundColor: 'rgba(255,255,255,0.18)' }]}>
+                  <Ionicons name="alarm" size={24} color={colors.white} />
                 </View>
                 <View style={styles.heroTimeInfo}>
                   <Text style={styles.heroTimeLabel}>
@@ -219,35 +238,35 @@ const RemainderScreen = () => {
                 <Text style={styles.heroMedDose}>{nextReminder.dosage}</Text>
                 
                 <View style={styles.heroFooterRow}>
-                  <View style={styles.heroFooterChip}>
-                    <Ionicons name="restaurant" size={14} color="#180991" />
-                    <Text style={styles.heroFooterText}>{nextReminder.instructions}</Text>
+                  <View style={[styles.heroFooterChip, { backgroundColor: colors.cardBackground }]}>
+                    <Ionicons name="restaurant" size={14} color={colors.primary} />
+                    <Text style={[styles.heroFooterText, { color: colors.primary }]}>{nextReminder.instructions}</Text>
                   </View>
-                  <View style={styles.heroFooterChip}>
-                    <Ionicons name="calendar" size={14} color="#180991" />
-                    <Text style={styles.heroFooterText}>{nextReminder.duration}</Text>
+                  <View style={[styles.heroFooterChip, { backgroundColor: colors.cardBackground }]}>
+                    <Ionicons name="calendar" size={14} color={colors.primary} />
+                    <Text style={[styles.heroFooterText, { color: colors.primary }]}>{nextReminder.duration}</Text>
                   </View>
                 </View>
               </View>
             </View>
           </View>
         ) : (
-          <View style={styles.emptyHeroCard}>
-            <Ionicons name="checkmark-done-circle" size={50} color="#4CAF50" />
-            <Text style={styles.emptyHeroText}>You're all caught up!</Text>
-            <Text style={styles.emptyHeroSubtext}>No more medications scheduled for today.</Text>
+          <View style={[styles.emptyHeroCard, { backgroundColor: colors.selectionBackground, borderColor: colors.selectionBorder }]}>
+            <Ionicons name="checkmark-done-circle" size={50} color={colors.success} />
+            <Text style={[styles.emptyHeroText, { color: colors.success }]}>You're all caught up!</Text>
+            <Text style={[styles.emptyHeroSubtext, { color: colors.success }]}>No more medications scheduled for today.</Text>
           </View>
         )}
 
         {/* Timeline View */}
         <View style={styles.timelineContainer}>
-          <Text style={styles.timelineTitle}>Today's Timeline</Text>
+          <Text style={[styles.timelineTitle, { color: colors.mainText }]}>Today's Timeline</Text>
           {schedule.length > 0 ? (
             schedule.map((item, index) => renderTimelineItem(item, index))
           ) : (
-            <View style={styles.emptyTimeline}>
-              <Ionicons name="medkit-outline" size={40} color="#ccc" />
-              <Text style={styles.emptyTimelineText}>No prescriptions assigned.</Text>
+            <View style={[styles.emptyTimeline, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+              <Ionicons name="medkit-outline" size={40} color={colors.mutedIcon} />
+              <Text style={[styles.emptyTimelineText, { color: colors.secondaryText }]}>No prescriptions assigned.</Text>
             </View>
           )}
         </View>
