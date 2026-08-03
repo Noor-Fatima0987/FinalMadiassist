@@ -1,7 +1,7 @@
 ﻿import React, { createContext, useState, useEffect } from "react";
 import { auth } from "../../firebase/firebaseConfig";
 import { onAuthStateChanged } from "firebase/auth";
-import { registerAndSyncPushTokenForUser } from "../../utils/notificationUtils";
+import { registerAndSyncPushTokenForUser, syncPatientMedicationNotifications } from "../../utils/notificationUtils";
 
 // Context create
 export const UserContext = createContext();
@@ -46,6 +46,11 @@ export const UserProvider = ({ children }) => {
               password: "" // Don't store password in context
             });
             await registerAndSyncPushTokenForUser(userData.firebaseId);
+            if (userData?.role === "PATIENT" && userData?.id) {
+              await syncPatientMedicationNotifications(userData.id).catch((error) => {
+                console.error("Patient reminder sync failed:", error);
+              });
+            }
           }
         } catch (error) {
           console.error("Auto-login error:", error);

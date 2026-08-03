@@ -3,6 +3,7 @@ import { StyleSheet, Text, View, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { UserContext } from '../../store/context/UserContext';
 import { Ionicons } from '@expo/vector-icons';
+import { syncPatientMedicationNotifications } from '../../utils/notificationUtils';
 
 const BACKEND_URL = "https://mediassist-rho.vercel.app";
 
@@ -17,6 +18,9 @@ const PrescriptionScreen = ({ navigation }) => {
         const data = await response.json();
         if (response.ok) {
           setDbPrescriptions(data);
+          syncPatientMedicationNotifications(user.id).catch((error) => {
+            console.error("Prescription reminder sync failed:", error);
+          });
         }
       } catch (error) {
         console.error("Error fetching patient prescriptions:", error);
