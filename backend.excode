@@ -1,4 +1,4 @@
-# MadiAssist Backend Development Notes (Learning Log)
+# MediAssist Backend Development Notes (Learning Log)
 
 ## 1. Package Manager Issue (Bun vs NPM)
 **Kya hua:** App run karte waqt 'Development build' ka error aa raha tha.
@@ -127,7 +127,7 @@ Humne app ko mazeed behtar banane ke liye aur user ke masail ko hal karne ke liy
 
 1. **Auto-Login aur Navigation Fix:**
    - **Masla:** Pehle jab user login hota tha toh app thori der ke liye "Sign Up" screen dikha deti thi kyunke usay check karne mein thora waqt lagta tha.
-   - **Hal:** Humne `UserContext` mein `isAuthLoading` ki state banayi. Ab jab tak app check kar rahi hoti hai ke user login hai ya nahi, tab tak screen par "Loading MadiAssist..." ka message aata hai. Aur user direct sahi dashboard par jata hai.
+   - **Hal:** Humne `UserContext` mein `isAuthLoading` ki state banayi. Ab jab tak app check kar rahi hoti hai ke user login hai ya nahi, tab tak screen par "Loading MediAssist..." ka message aata hai. Aur user direct sahi dashboard par jata hai.
 
 2. **Logout Issue Fix:**
    - **Masla:** Jab user logout karta tha toh woh sirf app se hat-ta tha, Firebase se session khatam nahi hota tha. Isliye app dubara auto-login kar deti thi.

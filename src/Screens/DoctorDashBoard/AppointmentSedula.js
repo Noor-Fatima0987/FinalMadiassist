@@ -1,4 +1,5 @@
-import { View, Text, FlatList, StyleSheet, SafeAreaView, ScrollView, Pressable } from 'react-native';
+import { View, Text, FlatList, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useContext, useMemo, useState, useEffect } from 'react';
 import { UserContext } from '../../store/context/UserContext';
 import { Ionicons } from '@expo/vector-icons';
@@ -109,7 +110,7 @@ function AppointmentSedula({ navigation }) {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={['left', 'right', 'bottom']} style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.headerSection}>
           <Text style={styles.welcomeText}>Hello, {user.fullName || 'Doctor'}</Text>

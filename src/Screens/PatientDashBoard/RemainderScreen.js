@@ -177,7 +177,7 @@ const RemainderScreen = () => {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.loadingContainer}>
+      <SafeAreaView edges={['left', 'right', 'bottom']} style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#180991" />
         <Text style={styles.loadingText}>Loading your schedule...</Text>
       </SafeAreaView>
@@ -185,7 +185,7 @@ const RemainderScreen = () => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={['left', 'right', 'bottom']} style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         
         <View style={styles.headerTitleContainer}>

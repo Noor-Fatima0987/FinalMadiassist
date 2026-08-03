@@ -52,7 +52,7 @@ function PatientDrawer() {
             <Ionicons name={focused ? 'home' : 'home-outline'} size={size} color={color} />
           ),
           headerShown: true,
-          headerTitle: "MadiAssist",
+          headerTitle: "MediAssist",
           headerTitleAlign: 'center',
           headerLeft: () => <HeaderLogo />,
           headerRight: () => <HeaderMenu navigation={navigation} />,
@@ -61,7 +61,7 @@ function PatientDrawer() {
       />
       <Tab.Screen name='Book Appointment' component={BookAppointScreen}
         options={{
-          headerTitle: "MadiAssist",
+          headerTitle: "MediAssist",
           tabBarIcon: ({ focused, color, size }) => (
             <Ionicons name={focused ? 'calendar' : 'calendar-outline'} size={size} color={color} />
           ),
@@ -70,7 +70,7 @@ function PatientDrawer() {
       />
       <Tab.Screen name='Appointment Detial' component={AppointmentDetialScreen}
         options={{
-          headerTitle: "MadiAssist",
+          headerTitle: "MediAssist",
           tabBarIcon: ({ focused, color, size }) => (
             <Ionicons name={focused ? 'list' : 'list-outline'} size={size} color={color} />
           ),
@@ -79,7 +79,7 @@ function PatientDrawer() {
       />
       <Tab.Screen name='Remainder' component={RemainderScreen}
         options={{
-          headerTitle: "MadiAssist",
+          headerTitle: "MediAssist",
           tabBarIcon: ({ focused, color, size }) => (
             <Ionicons name={focused ? 'alarm' : 'alarm-outline'} size={size} color={color} />
           ),
@@ -104,7 +104,7 @@ function Doctordarwer() {
       <Tab.Screen name='Home' component={HomeDoctorScreen}
         options={({ navigation }) => ({
           headerShown: true,
-          headerTitle: "MadiAssist",
+          headerTitle: "MediAssist",
           headerTitleAlign: 'center',
           headerLeft: () => <HeaderLogo />,
           headerRight: () => <HeaderMenu navigation={navigation} />,
@@ -116,7 +116,7 @@ function Doctordarwer() {
       />
       <Tab.Screen name='Sedular' component={AppointmentSedula}
         options={{
-          headerTitle: "MadiAssist",
+          headerTitle: "MediAssist",
           tabBarIcon: ({ focused, color, size }) => (
             <Ionicons name={focused ? 'calendar' : 'calendar-outline'} size={size} color={color} />
           ),
@@ -125,7 +125,7 @@ function Doctordarwer() {
       />
       <Tab.Screen name='Add Prescription' component={AddPrescription}
         options={{
-          headerTitle: "MadiAssist",
+          headerTitle: "MediAssist",
           tabBarIcon: ({ focused, color, size }) => (
             <Ionicons name={focused ? 'medical' : 'medical-outline'} size={size} color={color} />
           ),
@@ -222,7 +222,7 @@ function Navigation() {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f4f7fe' }}>
         <ActivityIndicator size="large" color="#180991ff" />
-        <Text style={{ marginTop: 10, color: '#180991ff', fontWeight: 'bold' }}>Loading MadiAssist...</Text>
+        <Text style={{ marginTop: 10, color: '#180991ff', fontWeight: 'bold' }}>Loading MediAssist...</Text>
       </View>
     );
   }
@@ -245,6 +245,7 @@ function Navigation() {
           <>
             <Stack.Screen name='Home' component={HomeScreen} options={{ headerShown: false }} />
             <Stack.Screen name='Sign In' component={SignInScreen} />
+            <Stack.Screen name='Our Doctor' component={OurDoctorScreen} />
             <Stack.Screen name='Sign Up' component={SignUpScreen} />
           </>
         ) : user.role === 'DOCTOR' ? (

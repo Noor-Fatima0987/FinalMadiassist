@@ -53,7 +53,7 @@ const HomeDoctorScreen = ({ navigation }) => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={['left', 'right', 'bottom']} style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
 
         {/* Header Section */}

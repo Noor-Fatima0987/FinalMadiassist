@@ -1,5 +1,6 @@
 import React, { useContext } from 'react';
-import { StyleSheet, Text, View, FlatList, SafeAreaView } from 'react-native';
+import { StyleSheet, Text, View, FlatList } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { UserContext } from '../../store/context/UserContext';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -76,7 +77,7 @@ const PrescriptionScreen = ({ navigation }) => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={['left', 'right', 'bottom']} style={styles.container}>
       <View style={styles.headerPadding}>
         <Text style={styles.title}>My Prescriptions</Text>
         <Text style={styles.subtitle}>Prescriptions from your doctors</Text>

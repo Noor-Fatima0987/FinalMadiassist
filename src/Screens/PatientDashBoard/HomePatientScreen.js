@@ -1,5 +1,6 @@
 ﻿import React, { useContext, useMemo, useState } from "react";
-import { View, Text, ScrollView, StyleSheet, SafeAreaView, TextInput, Pressable } from "react-native";
+import { View, Text, ScrollView, StyleSheet, TextInput, Pressable } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { UserContext } from "../../store/context/UserContext";
 import AppointmentCard from "../../Components/PatientComponent/AppointmentCard";
@@ -51,7 +52,7 @@ const HomePatientScreen = ({ navigation }) => {
 
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={['left', 'right', 'bottom']} style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
 
         {/* --- Header --- */}

@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "MadiAssist",
-    "slug": "MadiAssist",
+    "name": "MediAssist",
+    "slug": "MediAssist",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/assets/MediAssistLogo.jpeg",
