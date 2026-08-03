@@ -18,7 +18,7 @@ const EAS_PROJECT_ID =
     Constants.expoConfig?.extra?.eas?.projectId ||
     Constants.easConfig?.projectId ||
     '8732d1e8-b720-41ba-bd0c-03a2d089235e';
-const ALARM_CHANNEL_ID = 'alarm_vibrate_only_v3';
+const ALARM_CHANNEL_ID = 'alarm_vibrate_only_v4';
 
 async function configureNotificationChannelAsync() {
     if (Platform.OS === 'android') {
@@ -39,9 +39,9 @@ async function configureAlarmChannelAsync() {
         name: 'Alarm Vibrate',
         importance: AndroidImportance.HIGH,
         vibration: true,
-        vibrationPattern: [0, 1000, 500, 1000],
+        vibrationPattern: [1000, 500, 1000, 500],
         lights: true,
-        sound: undefined,
+        sound: 'default',
     });
 }
 
@@ -83,7 +83,8 @@ function buildAlarmNotification({ medicineName, dosage, time, instructions, noti
             importance: AndroidImportance.HIGH,
             autoCancel: false,
             ongoing: true,
-            vibrationPattern: [0, 1000, 500, 1000],
+            sound: 'default',
+            vibrationPattern: [1000, 500, 1000, 500],
             pressAction: {
                 id: 'default',
             },
