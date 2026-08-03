@@ -19,8 +19,8 @@ function buildAppointmentNotification(recipientRole, doctorName, patientName, da
   }
 
   return {
-    title: 'New Appointment',
-    body: `${patientName} booked an appointment for ${date} at ${time}.`,
+    title: 'New Appointment Booked',
+    body: `${patientName} has booked an appointment for ${date} at ${time}.`,
     data: {
       type: 'new-appointment',
       appointmentId,

@@ -134,21 +134,40 @@ const BookAppointmentScreen = ({ navigation }) => {
       const result = await response.json();
 
       if (response.ok) {
-        if (doctor?.expoPushToken && result?.notification?.doctorSent !== true) {
-          await sendExpoPushNotificationAsync({
-            to: doctor.expoPushToken,
-            title: 'New Appointment',
-            body: `${user.fullName || 'A patient'} booked an appointment for ${date} at ${time}.`,
-            data: {
-              type: 'new-appointment',
-              appointmentId: result.id,
-              recipientRole: 'DOCTOR',
-            },
-          }).catch((pushError) => {
-            console.error('Fallback doctor push failed:', pushError);
-          });
+        // Fetch fresh doctor push token or fallback to doctor.expoPushToken
+        try {
+          let doctorToken = doctor?.expoPushToken;
+          try {
+            const tokenRes = await fetch(`${BACKEND_URL}/api/user/${doctor.id}/push-token`);
+            if (tokenRes.ok) {
+              const tokenData = await tokenRes.json();
+              if (tokenData?.expoPushToken) {
+                doctorToken = tokenData.expoPushToken;
+              }
+            }
+          } catch (fetchErr) {
+            console.log('Push token fetch fallback to doctor object:', fetchErr?.message);
+          }
+
+          if (doctorToken) {
+            await sendExpoPushNotificationAsync({
+              to: doctorToken,
+              title: 'New Appointment Booked',
+              body: `${user.fullName || 'A patient'} has booked an appointment for ${date} at ${time}.`,
+              data: {
+                type: 'new-appointment',
+                appointmentId: result.id,
+                recipientRole: 'DOCTOR',
+              },
+            }).catch((pushErr) => {
+              console.log('Expo push send status:', pushErr?.message);
+            });
+          }
+        } catch (notifErr) {
+          console.log('Doctor notification handled:', notifErr?.message);
         }
 
+        // Notify patient locally
         await sendAppointmentConfirmationNotificationAsync(doctor.fullName, date, time);
         navigation.navigate("Home");
       } else {

@@ -36,17 +36,8 @@ const AppointmentDetialScreen = () => {
   }, []);
 
   const visibleAppointments = useMemo(() => {
-    const now = new Date();
-
-    return dbAppointments.filter((item) => {
-      const isCancelled = item.status === 'Cancelled' || item.status === 'Canceled';
-      if (!isCancelled) {
-        return true;
-      }
-
-      const appointmentDateTime = new Date(`${item.date}T${convertTo24Hour(item.time || '00:00')}`);
-      return appointmentDateTime > now;
-    });
+    // Show all appointments including cancelled ones in history
+    return [...dbAppointments].sort((a, b) => new Date(b.date) - new Date(a.date));
   }, [dbAppointments, timeTick]);
 
   const handleCancelAppointment = async (appointmentId) => {
@@ -125,7 +116,7 @@ const AppointmentDetialScreen = () => {
   };
 
   return (
-    <SafeAreaView edges={['left', 'right', 'bottom']} style={styles.container}>
+    <SafeAreaView edges={['left', 'right']} style={styles.container}>
       <View style={styles.headerPadding}>
         <Text style={styles.title}>Appointment History</Text>
         <Text style={styles.subtitle}>List of all your consultations</Text>

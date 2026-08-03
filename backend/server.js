@@ -313,6 +313,27 @@ app.put('/api/user/:firebaseId/push-token', async (req, res) => {
   }
 });
 
+// Get push token for any user by their DB id or Firebase id
+app.get('/api/user/:id/push-token', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { id },
+          { firebaseId: id }
+        ]
+      },
+      select: { id: true, firebaseId: true, fullName: true, expoPushToken: true },
+    });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json({ expoPushToken: user.expoPushToken || null, fullName: user.fullName });
+  } catch (error) {
+    console.error('Get push token error:', error);
+    res.status(500).json({ error: 'Failed to get push token' });
+  }
+});
+
 // Get All Doctors Route (Appointment book karne se pehle list dikhane ke liye)
 app.get('/api/doctors', async (req, res) => {
   try {
@@ -491,10 +512,23 @@ app.put('/api/appointments/:id/status', async (req, res) => {
 app.post('/api/prescriptions', async (req, res) => {
   const { doctorId, patientId, date, medications } = req.body;
   try {
+    const [patientUser, doctorUser] = await Promise.all([
+      prisma.user.findFirst({
+        where: { OR: [{ id: patientId }, { firebaseId: patientId }] }
+      }),
+      prisma.user.findFirst({
+        where: { OR: [{ id: doctorId }, { firebaseId: doctorId }] }
+      })
+    ]);
+
+    if (!patientUser || !doctorUser) {
+      return res.status(404).json({ error: 'Patient or Doctor not found' });
+    }
+
     const newPrescription = await prisma.prescription.create({
       data: {
-        doctorId,
-        patientId,
+        doctorId: doctorUser.id,
+        patientId: patientUser.id,
         date,
         medications: {
           create: medications.map(med => ({
@@ -507,9 +541,31 @@ app.post('/api/prescriptions', async (req, res) => {
         }
       },
       include: {
+        doctor: true,
+        patient: true,
         medications: true
       }
     });
+
+    // Notify patient via push notification
+    try {
+      if (patientUser?.expoPushToken) {
+        await sendExpoPushNotifications([{
+          to: patientUser.expoPushToken,
+          title: 'New Prescription Added',
+          body: `Dr. ${doctorUser?.fullName || 'Doctor'} has added a new prescription for you.`,
+          sound: 'default',
+          priority: 'high',
+          data: {
+            type: 'prescription-added',
+            prescriptionId: newPrescription.id
+          }
+        }]);
+      }
+    } catch (pushErr) {
+      console.error('Prescription push notification error:', pushErr);
+    }
+
     res.status(201).json(newPrescription);
   } catch (error) {
     console.error("Prescription Error:", error);
@@ -522,7 +578,12 @@ app.get('/api/prescriptions/patient/:userId', async (req, res) => {
   const { userId } = req.params;
   try {
     const prescriptions = await prisma.prescription.findMany({
-      where: { patientId: userId },
+      where: {
+        OR: [
+          { patientId: userId },
+          { patient: { firebaseId: userId } }
+        ]
+      },
       include: {
         doctor: true,
         medications: true

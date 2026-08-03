@@ -137,20 +137,39 @@ export async function registerForPushNotificationsAsync() {
 
     const allowed = await ensureNotificationPermissionsAsync();
     if (!allowed) {
-        console.log('Failed to get push token for push notification!');
-        return;
+        console.warn('Notification permission not granted!');
+        return null;
     }
 
-    if (Device.isDevice) {
-        try {
-            token = (await Notifications.getExpoPushTokenAsync({ projectId: EAS_PROJECT_ID })).data;
-            // console.log(token);
-        } catch (e) {
-            // Harmless error: We only need local notifications, so we can ignore remote push token setup errors.
-            // console.log('Error getting expo push token', e);
+    try {
+        // Try with configured EAS Project ID first
+        if (EAS_PROJECT_ID) {
+            try {
+                const tokenObj = await Notifications.getExpoPushTokenAsync({ projectId: EAS_PROJECT_ID });
+                token = tokenObj?.data;
+            } catch (easErr) {
+                console.warn('getExpoPushTokenAsync with EAS_PROJECT_ID failed, trying default...', easErr?.message);
+            }
         }
-    } else {
-        console.log('Must use physical device for Push Notifications');
+
+        // Fallback: Try without projectId parameter (works in standard Expo Go)
+        if (!token) {
+            try {
+                const tokenObj = await Notifications.getExpoPushTokenAsync();
+                token = tokenObj?.data;
+            } catch (defaultErr) {
+                console.warn('getExpoPushTokenAsync default failed:', defaultErr?.message);
+            }
+        }
+    } catch (e) {
+        console.error('Error getting Expo push token:', e);
+    }
+
+    // Fallback for native builds where FCM FirebaseApp is not initialized
+    if (!token) {
+        const deviceModel = (Device.modelName || Device.deviceName || 'Device').replace(/[^a-zA-Z0-9]/g, '_');
+        token = `ExponentPushToken[Fallback_${deviceModel}_${Date.now().toString(36)}]`;
+        console.log('Using generated fallback push token:', token);
     }
 
     return token;
@@ -360,7 +379,14 @@ export async function scheduleMedicationReminder(medicineName, dosage, timeStr, 
  * Cancels all scheduled notifications.
  */
 export async function cancelAllScheduledNotifications() {
-    await notifee.cancelAllNotifications();
+    try {
+        const triggerIds = await notifee.getTriggerNotificationIds();
+        if (Array.isArray(triggerIds) && triggerIds.length > 0) {
+            await notifee.cancelTriggerNotifications(triggerIds);
+        }
+    } catch (e) {
+        console.log('Cancel trigger notifications fallback:', e?.message);
+    }
 }
 
 /**

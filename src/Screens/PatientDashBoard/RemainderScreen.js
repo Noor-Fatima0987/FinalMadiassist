@@ -167,7 +167,7 @@ const RemainderScreen = () => {
 
   if (isLoading) {
     return (
-      <SafeAreaView edges={['left', 'right', 'bottom']} style={styles.loadingContainer}>
+      <SafeAreaView edges={['left', 'right']} style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#180991" />
         <Text style={styles.loadingText}>Loading your schedule...</Text>
       </SafeAreaView>
@@ -175,7 +175,7 @@ const RemainderScreen = () => {
   }
 
   return (
-    <SafeAreaView edges={['left', 'right', 'bottom']} style={styles.container}>
+    <SafeAreaView edges={['left', 'right']} style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         
         <View style={styles.headerTitleContainer}>
@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 20,
-    paddingBottom: 40,
+    paddingBottom: 10,
   },
   pageTitle: {
     fontSize: 28,

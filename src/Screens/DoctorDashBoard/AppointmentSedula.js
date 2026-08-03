@@ -161,7 +161,7 @@ function AppointmentSedula({ navigation }) {
   };
 
   return (
-    <SafeAreaView edges={['left', 'right', 'bottom']} style={styles.container}>
+    <SafeAreaView edges={['left', 'right']} style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.headerSection}>
           <Text style={styles.welcomeText}>Hello, {user.fullName || 'Doctor'}</Text>

@@ -77,7 +77,7 @@ const PrescriptionScreen = ({ navigation }) => {
   );
 
   return (
-    <SafeAreaView edges={['left', 'right', 'bottom']} style={styles.container}>
+    <SafeAreaView edges={['left', 'right']} style={styles.container}>
       <View style={styles.headerPadding}>
         <Text style={styles.title}>My Prescriptions</Text>
         <Text style={styles.subtitle}>Prescriptions from your doctors</Text>
