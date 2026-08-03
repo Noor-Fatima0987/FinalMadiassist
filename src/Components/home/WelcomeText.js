@@ -4,7 +4,7 @@ import Tittle from "../home/Tittle";
 function WelcomeText() {
   return (
     <View style={styles.container}>
-      <Tittle> MadiAssist </Tittle>
+      <Tittle> MediAssist </Tittle>
       <Tittle customStyle={{ fontSize: 35 }}>Welcome!</Tittle>
     </View>
   );

@@ -1,5 +1,6 @@
 import React, { useContext, useState, useEffect } from 'react';
-import { StyleSheet, Text, View, FlatList, SafeAreaView, Pressable } from 'react-native';
+import { StyleSheet, Text, View, FlatList, Pressable } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { UserContext } from '../../store/context/UserContext';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -85,7 +86,7 @@ const AppointmentDetialScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={['left', 'right', 'bottom']} style={styles.container}>
       <View style={styles.headerPadding}>
         <Text style={styles.title}>Appointment History</Text>
         <Text style={styles.subtitle}>List of all your consultations</Text>

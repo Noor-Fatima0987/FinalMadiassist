@@ -156,7 +156,7 @@ const PatientsList = () => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={['left', 'right', 'bottom']} style={styles.container}>
       <View style={styles.headerPadding}>
         <Text style={styles.title}>My Patients</Text>
         <Text style={styles.subtitle}>Total: {doctorPatients.length} patients</Text>

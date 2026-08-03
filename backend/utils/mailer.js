@@ -29,13 +29,13 @@ const sendOtpEmail = async (email, otp) => {
     });
 
     const mailOptions = {
-      from: `"MadiAssist" <${smtpUser}>`,
+      from: `"MediAssist" <${smtpUser}>`,
       to: email,
-      subject: "MadiAssist - Email Verification OTP",
+      subject: "MediAssist - Email Verification OTP",
       text: `Your verification code is: ${otp}. This code is valid for 5 minutes.`,
       html: `
         <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
-          <h2 style="color: #180991;">MadiAssist Verification</h2>
+          <h2 style="color: #180991;">MediAssist Verification</h2>
           <p>Thank you for registering. Please use the following One-Time Password (OTP) to verify your email address:</p>
           <div style="background-color: #f4f7fe; padding: 15px; border-radius: 8px; font-size: 24px; font-weight: bold; text-align: center; color: #180991; letter-spacing: 5px; margin: 20px 0;">
             ${otp}

@@ -24,7 +24,7 @@ const AddPrescriptionScreen = ({ navigation, route }) => {
   const { patientName } = route.params || {};
 
   const [doctorPatients, setDoctorPatients] = useState([]);
-  const [selectedPatient, setSelectedPatient] = useState(patientName || '');
+  const [selectedPatient, setSelectedPatient] = useState('__placeholder__');
   const [isLoading, setIsLoading] = useState(false);
 
   // Global state for native time picker
@@ -60,7 +60,7 @@ const AddPrescriptionScreen = ({ navigation, route }) => {
   React.useEffect(() => {
     if (patientName) {
       const match = doctorPatients.find(p => p.fullName === patientName);
-      if (match) setSelectedPatient(match.id);
+      if (match) setSelectedPatient(String(match.id));
     }
   }, [patientName, doctorPatients]);
 
@@ -142,7 +142,7 @@ const AddPrescriptionScreen = ({ navigation, route }) => {
   };
 
   const openReminderSetup = () => {
-    if (!selectedPatient) {
+    if (!selectedPatient || selectedPatient === '__placeholder__') {
       Alert.alert('Error', 'Please select a patient');
       return;
     }
@@ -200,12 +200,9 @@ const AddPrescriptionScreen = ({ navigation, route }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={['left', 'right', 'bottom']} style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <View style={styles.iconCircle}>
-            <Ionicons name="medical" size={40} color="#fff" />
-          </View>
           <Text style={styles.title}>New Prescription</Text>
           <Text style={styles.subtitle}>Fill in the details carefully</Text>
         </View>
@@ -216,12 +213,13 @@ const AddPrescriptionScreen = ({ navigation, route }) => {
           <View style={styles.pickerContainer}>
             <Picker
               selectedValue={selectedPatient}
-              onValueChange={setSelectedPatient}
+              onValueChange={(value) => setSelectedPatient(String(value))}
+              itemStyle={{ color: '#180991', fontSize: 16 }}
               style={styles.picker}
             >
-              <Picker.Item label="Choose a patient..." value="" />
+              <Picker.Item label="Select your patient" value="__placeholder__" />
               {doctorPatients.map((patient, index) => (
-                <Picker.Item key={index} label={patient.fullName} value={patient.id} />
+                <Picker.Item key={index} label={patient.fullName} value={String(patient.id)} />
               ))}
             </Picker>
           </View>
@@ -452,21 +450,7 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     marginBottom: 25,
-    marginTop: 10,
-  },
-  iconCircle: {
-    width: 70,
-    height: 70,
-    backgroundColor: '#180991',
-    borderRadius: 35,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 10,
-    elevation: 5,
-    shadowColor: '#180991',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
+    marginTop: 4,
   },
   title: {
     fontSize: 26,
