@@ -3,12 +3,15 @@ import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { UserContext } from '../../store/context/UserContext';
 import { Ionicons } from '@expo/vector-icons';
+import { getAppointmentDateTime, canStartAppointment, getMinutesUntilAppointmentStart } from '../../utils/reminderUtils';
+import { registerAndSyncPushTokenForUser } from '../../utils/notificationUtils';
 
 const BACKEND_URL = "https://mediassist-rho.vercel.app";
 
 const HomeDoctorScreen = ({ navigation }) => {
   const { user } = useContext(UserContext); // Removed appointments from context
   const [dbAppointments, setDbAppointments] = useState([]);
+  const [, setTimeTick] = useState(Date.now());
 
   // Fetch appointments for this doctor
   useEffect(() => {
@@ -29,6 +32,11 @@ const HomeDoctorScreen = ({ navigation }) => {
     };
     
     const unsubscribe = navigation.addListener('focus', () => {
+      if (user?.firebaseId) {
+        registerAndSyncPushTokenForUser(user.firebaseId).catch((error) => {
+          console.error('Doctor push token sync failed:', error);
+        });
+      }
       fetchAppointments();
     });
     
@@ -37,6 +45,14 @@ const HomeDoctorScreen = ({ navigation }) => {
 
     return unsubscribe;
   }, [navigation, user.id]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTimeTick(Date.now());
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Today's Date
   const todayDate = new Date().toISOString().split('T')[0];
@@ -51,6 +67,23 @@ const HomeDoctorScreen = ({ navigation }) => {
     dbAppointments.filter(app => app.status === 'Pending'),
     [dbAppointments]
   );
+
+  const nextAppointment = useMemo(() => {
+    if (pendingApps.length === 0) return null;
+
+    return [...pendingApps].sort((a, b) => {
+      const aTime = getAppointmentDateTime(a.date, a.time)?.getTime() ?? 0;
+      const bTime = getAppointmentDateTime(b.date, b.time)?.getTime() ?? 0;
+      return aTime - bTime;
+    })[0];
+  }, [pendingApps]);
+
+  const canStartNextAppointment = nextAppointment
+    ? canStartAppointment(nextAppointment.date, nextAppointment.time)
+    : false;
+  const minutesUntilNextAppointment = nextAppointment
+    ? getMinutesUntilAppointmentStart(nextAppointment.date, nextAppointment.time)
+    : 0;
 
   return (
     <SafeAreaView edges={['left', 'right', 'bottom']} style={styles.container}>
@@ -86,23 +119,38 @@ const HomeDoctorScreen = ({ navigation }) => {
         {/* Next Patient Section */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Next Appointment</Text>
-          <Pressable onPress={() => navigation.navigate('Sedular')}>
+          <Pressable onPress={() => navigation.navigate('schedule')}>
             <Text style={styles.viewAll}>View Schedule</Text>
           </Pressable>
         </View>
 
-        {pendingApps.length > 0 ? (
+        {nextAppointment ? (
           <View style={styles.nextPatientCard}>
             <View style={styles.timeTag}>
-              <Text style={styles.timeText}>{pendingApps[0].time}</Text>
+              <Text style={styles.timeText}>{nextAppointment.time}</Text>
             </View>
             <View style={styles.patientInfo}>
-              <Text style={styles.patientName}>{pendingApps[0].patient?.fullName || "Patient"}</Text>
-              <Text style={styles.patientDetail}>Age: {pendingApps[0].patient?.age || "N/A"} • Consultation</Text>
+              <Text style={styles.patientName}>{nextAppointment.patient?.fullName || "Patient"}</Text>
+              <Text style={styles.patientDetail}>Age: {nextAppointment.patient?.age || "N/A"} • Consultation</Text>
             </View>
-            <Pressable style={styles.startBtn} onPress={() => navigation.navigate('Sedular')}>
-              <Text style={styles.startBtnText}>Start</Text>
-            </Pressable>
+            <View style={styles.startActionWrap}>
+              {!canStartNextAppointment && (
+                <Text style={styles.startHint}>
+                  Starts in {minutesUntilNextAppointment} min{minutesUntilNextAppointment === 1 ? '' : 's'}
+                </Text>
+              )}
+              <Pressable
+                style={[styles.startBtn, !canStartNextAppointment && styles.startBtnDisabled]}
+                onPress={() => navigation.navigate('Add Prescription', {
+                  patientName: nextAppointment.patient?.fullName,
+                  patientId: nextAppointment.patientId,
+                  appointmentId: nextAppointment.id,
+                })}
+                disabled={!canStartNextAppointment}
+              >
+                <Text style={styles.startBtnText}>Start</Text>
+              </Pressable>
+            </View>
           </View>
         ) : (
           <View style={styles.emptyCard}>
@@ -114,7 +162,7 @@ const HomeDoctorScreen = ({ navigation }) => {
         {/* Quick Actions */}
         <Text style={styles.sectionTitle}>Quick Actions</Text>
         <View style={styles.actionsGrid}>
-          <Pressable style={styles.actionItem} onPress={() => navigation.navigate('Sedular')}>
+          <Pressable style={styles.actionItem} onPress={() => navigation.navigate('schedule')}>
             <View style={[styles.actionIcon,]}>
               <Ionicons name="calendar" size={24} color="#180991ff" />
             </View>
@@ -252,11 +300,23 @@ const styles = StyleSheet.create({
     color: '#888',
     marginTop: 2,
   },
+  startActionWrap: {
+    alignItems: 'flex-end',
+  },
+  startHint: {
+    fontSize: 12,
+    color: '#8a4b00',
+    fontWeight: '600',
+    marginBottom: 6,
+  },
   startBtn: {
     backgroundColor: '#180991',
     paddingHorizontal: 15,
     paddingVertical: 8,
     borderRadius: 10,
+  },
+  startBtnDisabled: {
+    backgroundColor: '#b8bfdc',
   },
   startBtnText: {
     color: '#fff',

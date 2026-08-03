@@ -12,6 +12,7 @@ model User {
   email         String   @unique
   fullName      String
   role          Role     @default(PATIENT)
+  expoPushToken String?  @unique
   
   // New profile fields
   contactNumber String?
@@ -120,4 +121,3 @@ model OtpVerification {
   expiresAt DateTime @default(now())
   createdAt DateTime @default(now())
 }
-

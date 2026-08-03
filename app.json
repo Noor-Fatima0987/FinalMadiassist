@@ -18,12 +18,23 @@
     },
     "android": {
       "edgeToEdgeEnabled": true,
-      "package": "com.noorfatima.finalMadiAssist"
+      "package": "com.noorfatima.finalMadiAssist",
+      "permissions": [
+        "SCHEDULE_EXACT_ALARM",
+        "USE_FULL_SCREEN_INTENT"
+      ]
     },
     "web": {
       "favicon": "./assets/assets/favicon.png"
     },
     "plugins": [
+      "./plugins/withAlarmActivity",
+      [
+        "expo-notifications",
+        {
+          "defaultChannel": "default"
+        }
+      ],
       [
         "expo-splash-screen",
         {

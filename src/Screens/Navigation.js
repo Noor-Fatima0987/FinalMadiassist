@@ -114,7 +114,7 @@ function Doctordarwer() {
           ),
         })}
       />
-      <Tab.Screen name='Sedular' component={AppointmentSedula}
+      <Tab.Screen name='schedule' component={AppointmentSedula}
         options={{
           headerTitle: "MediAssist",
           tabBarIcon: ({ focused, color, size }) => (

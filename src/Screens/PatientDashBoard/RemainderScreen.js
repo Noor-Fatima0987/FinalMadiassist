@@ -18,17 +18,14 @@ import {
 import { syncNotificationsWithMedications, registerForPushNotificationsAsync } from '../../utils/notificationUtils';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { AlarmContext } from '../../store/context/AlarmContext';
 
 const RemainderScreen = () => {
   const navigation = useNavigation();
   const { user } = useContext(UserContext) || {};
-  const { triggerAlarm } = useContext(AlarmContext) || {};
   const [medications, setMedications] = useState([]);
   const [schedule, setSchedule] = useState([]);
   const [nextReminder, setNextReminder] = useState(null);
   const [timeUntil, setTimeUntil] = useState(0);
-  const [lastTriggeredTime, setLastTriggeredTime] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
   const BACKEND_URL = "https://mediassist-rho.vercel.app";
@@ -83,13 +80,6 @@ const RemainderScreen = () => {
           setNextReminder(next);
           const secs = getSecondsUntil(next.time, false);
           setTimeUntil(secs);
-          
-          // Trigger alarm if it's exactly target time (0 or fewer seconds until)
-          // Use lastTriggeredTime guard to prevent multiple triggers within the same target minute.
-          if (secs <= 0 && triggerAlarm && lastTriggeredTime !== next.time) {
-            setLastTriggeredTime(next.time);
-            triggerAlarm(next);
-          }
       } else {
           setNextReminder(null);
           setTimeUntil(0);
@@ -108,7 +98,7 @@ const RemainderScreen = () => {
 
     const interval = setInterval(updateReminders, 1000);
     return () => clearInterval(interval);
-  }, [medications, lastTriggeredTime]);
+  }, [medications]);
 
   const currentDate = new Date().toLocaleDateString('en-US', {
     weekday: 'long',

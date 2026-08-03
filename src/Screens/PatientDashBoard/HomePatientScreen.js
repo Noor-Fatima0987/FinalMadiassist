@@ -47,7 +47,7 @@ const HomePatientScreen = ({ navigation }) => {
 
   // Find the next upcoming appointment (including today)
   const upcomingAppointment = sortedAppointments.find(
-    (app) => app.date >= today && app.status !== "Completed"
+    (app) => app.date >= today && app.status !== "Completed" && app.status !== "Cancelled" && app.status !== "Canceled"
   );
 
 

@@ -1,14 +1,16 @@
-import React, { useContext, useState, useEffect } from 'react';
-import { StyleSheet, Text, View, FlatList, Pressable } from 'react-native';
+import React, { useContext, useState, useEffect, useMemo } from 'react';
+import { StyleSheet, Text, View, FlatList, Pressable, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { UserContext } from '../../store/context/UserContext';
 import { Ionicons } from '@expo/vector-icons';
+import { convertTo24Hour, canCancelAppointment, getCancelWindowMinutesLeft } from '../../utils/reminderUtils';
 
 const BACKEND_URL = "https://mediassist-rho.vercel.app";
 
 const AppointmentDetialScreen = () => {
   const { user } = useContext(UserContext); // Removed appointments from context
   const [dbAppointments, setDbAppointments] = useState([]);
+  const [timeTick, setTimeTick] = useState(Date.now());
 
   useEffect(() => {
     const fetchAppointments = async () => {
@@ -25,6 +27,28 @@ const AppointmentDetialScreen = () => {
     fetchAppointments();
   }, [user.id]);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTimeTick(Date.now());
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const visibleAppointments = useMemo(() => {
+    const now = new Date();
+
+    return dbAppointments.filter((item) => {
+      const isCancelled = item.status === 'Cancelled' || item.status === 'Canceled';
+      if (!isCancelled) {
+        return true;
+      }
+
+      const appointmentDateTime = new Date(`${item.date}T${convertTo24Hour(item.time || '00:00')}`);
+      return appointmentDateTime > now;
+    });
+  }, [dbAppointments, timeTick]);
+
   const handleCancelAppointment = async (appointmentId) => {
     try {
       const response = await fetch(`${BACKEND_URL}/api/appointments/${appointmentId}/status`, {
@@ -36,15 +60,25 @@ const AppointmentDetialScreen = () => {
         setDbAppointments(prev => prev.map(app => 
           app.id === appointmentId ? { ...app, status: "Cancelled" } : app
         ));
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        Alert.alert(
+          "Cannot Cancel",
+          errorData?.error || "Appointment can only be cancelled within 15 minutes of booking."
+        );
       }
     } catch (error) {
       console.error("Error cancelling appointment:", error);
+      Alert.alert("Error", "Failed to cancel appointment. Please try again.");
     }
   };
 
   const renderAppointmentItem = ({ item }) => {
-    const isCancellable = item.status === "Pending" || item.status === "Scheduled";
+    const isWithinCancelWindow = canCancelAppointment(item.createdAt, 15);
+    const isCancellable =
+      (item.status === "Pending" || item.status === "Scheduled") && isWithinCancelWindow;
     const isCancelled = item.status === "Cancelled";
+    const minutesLeft = getCancelWindowMinutesLeft(item.createdAt, 15);
 
     return (
       <View style={[styles.appointmentBox, isCancelled && { borderLeftColor: '#d32f2f', opacity: 0.8 }]}>
@@ -72,13 +106,18 @@ const AppointmentDetialScreen = () => {
           </View>
 
           {isCancellable && (
-            <Pressable 
-              style={styles.cancelBtn} 
-              onPress={() => handleCancelAppointment(item.id)}
-            >
-              <Ionicons name="close-circle-outline" size={16} color="#d32f2f" />
-              <Text style={styles.cancelBtnText}>Cancel Appointment</Text>
-            </Pressable>
+            <>
+              <Text style={styles.cancelHint}>
+                Cancel available for {minutesLeft} min{minutesLeft === 1 ? '' : 's'}
+              </Text>
+              <Pressable
+                style={styles.cancelBtn}
+                onPress={() => handleCancelAppointment(item.id)}
+              >
+                <Ionicons name="close-circle-outline" size={16} color="#d32f2f" />
+                <Text style={styles.cancelBtnText}>Cancel Appointment</Text>
+              </Pressable>
+            </>
           )}
         </View>
       </View>
@@ -93,7 +132,7 @@ const AppointmentDetialScreen = () => {
       </View>
 
       <FlatList
-        data={dbAppointments}
+        data={visibleAppointments}
         keyExtractor={(item) => item.id}
         renderItem={renderAppointmentItem}
         contentContainerStyle={styles.listContent}
@@ -213,6 +252,13 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginTop: 10,
     alignSelf: 'flex-start',
+  },
+  cancelHint: {
+    marginTop: 8,
+    marginBottom: 6,
+    color: '#8a4b00',
+    fontSize: 12,
+    fontWeight: '600',
   },
   cancelBtnText: {
     color: '#d32f2f',

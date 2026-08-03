@@ -5,12 +5,62 @@ const { Pool } = require('pg');
 const { PrismaPg } = require('@prisma/adapter-pg');
 require('dotenv').config();
 const { sendOtpEmail } = require('./utils/mailer');
+const { sendAppointmentBookedNotifications } = require('./utils/pushNotifications');
 const {
   parseWorkingDays,
   parseTimeToMinutes,
   isDateAllowed,
   isTimeAllowed,
 } = require('./utils/doctorAvailability');
+
+const CANCEL_WINDOW_MINUTES = 15;
+const KARACHI_TIME_OFFSET_MINUTES = 5 * 60;
+
+const convertTo24Hour = (timeStr) => {
+  try {
+    const [time, modifier] = String(timeStr || '').trim().split(/\s+/);
+    let [hours, minutes] = (time || '00:00').split(':');
+
+    if (hours === '12') {
+      hours = '00';
+    }
+
+    if (modifier && modifier.toUpperCase() === 'PM') {
+      hours = String(parseInt(hours, 10) + 12);
+    }
+
+    return `${String(hours).padStart(2, '0')}:${String(minutes || '00').padStart(2, '0')}`;
+  } catch {
+    return '00:00';
+  }
+};
+
+const getAppointmentDateTime = (dateStr, timeStr) => {
+  if (!dateStr || !timeStr) return null;
+
+  const [yearStr, monthStr, dayStr] = String(dateStr).split('-');
+  const [hoursStr, minutesStr] = convertTo24Hour(timeStr).split(':');
+
+  const year = parseInt(yearStr, 10);
+  const month = parseInt(monthStr, 10);
+  const day = parseInt(dayStr, 10);
+  const hours = parseInt(hoursStr, 10);
+  const minutes = parseInt(minutesStr, 10);
+
+  if ([year, month, day, hours, minutes].some(Number.isNaN)) return null;
+
+  const utcMs = Date.UTC(year, month - 1, day, hours, minutes) - (KARACHI_TIME_OFFSET_MINUTES * 60 * 1000);
+  return new Date(utcMs);
+};
+
+const isWithinCancelWindow = (createdAt, windowMinutes = CANCEL_WINDOW_MINUTES) => {
+  if (!createdAt) return false;
+
+  const createdDate = new Date(createdAt);
+  if (Number.isNaN(createdDate.getTime())) return false;
+
+  return Date.now() <= createdDate.getTime() + windowMinutes * 60 * 1000;
+};
 
 const app = express();
 
@@ -131,7 +181,7 @@ app.get('/api/user/:firebaseId', async (req, res) => {
 // Update User Profile Route (Edit Profile)
 app.put('/api/user/:firebaseId', async (req, res) => {
   const { firebaseId } = req.params;
-  const { fullName, email, contactNumber, cnic, gender, address, role, doctorProfile, patientProfile } = req.body;
+  const { fullName, email, contactNumber, cnic, gender, address, role, doctorProfile, patientProfile, expoPushToken } = req.body;
   
   try {
     const user = await prisma.user.findUnique({ where: { firebaseId } });
@@ -172,6 +222,13 @@ app.put('/api/user/:firebaseId', async (req, res) => {
       }
     }
 
+    if (expoPushToken) {
+      await prisma.user.updateMany({
+        where: { expoPushToken },
+        data: { expoPushToken: null },
+      });
+    }
+
     const updatedUser = await prisma.user.update({
       where: { firebaseId },
       data: {
@@ -180,6 +237,7 @@ app.put('/api/user/:firebaseId', async (req, res) => {
         cnic,
         gender,
         address,
+        expoPushToken,
         doctorProfile: user.role === 'DOCTOR' && doctorProfile ? {
           upsert: {
             create: { 
@@ -223,6 +281,38 @@ app.put('/api/user/:firebaseId', async (req, res) => {
   }
 });
 
+// Save Expo push token for the current device
+app.put('/api/user/:firebaseId/push-token', async (req, res) => {
+  const { firebaseId } = req.params;
+  const { expoPushToken } = req.body;
+
+  if (!expoPushToken) {
+    return res.status(400).json({ error: 'expoPushToken is required' });
+  }
+
+  try {
+    await prisma.user.updateMany({
+      where: { expoPushToken },
+      data: { expoPushToken: null },
+    });
+
+    const updatedUser = await prisma.user.update({
+      where: { firebaseId },
+      data: { expoPushToken },
+      select: {
+        id: true,
+        firebaseId: true,
+        expoPushToken: true,
+      },
+    });
+
+    res.json({ success: true, user: updatedUser });
+  } catch (error) {
+    console.error("Save Push Token Error:", error);
+    res.status(500).json({ error: 'Failed to save push token' });
+  }
+});
+
 // Get All Doctors Route (Appointment book karne se pehle list dikhane ke liye)
 app.get('/api/doctors', async (req, res) => {
   try {
@@ -241,16 +331,16 @@ app.get('/api/doctors', async (req, res) => {
 app.post('/api/appointments', async (req, res) => {
   const { patientId, doctorId, date, time, notes } = req.body;
   try {
-    const doctor = await prisma.user.findUnique({
+    const selectedDoctor = await prisma.user.findUnique({
       where: { id: doctorId },
       include: { doctorProfile: true }
     });
 
-    if (!doctor || doctor.role !== 'DOCTOR') {
+    if (!selectedDoctor || selectedDoctor.role !== 'DOCTOR') {
       return res.status(404).json({ error: 'Doctor not found' });
     }
 
-    const doctorProfile = doctor.doctorProfile;
+    const doctorProfile = selectedDoctor.doctorProfile;
     const workingDays = doctorProfile?.workingDays || [];
     const workingHoursStart = doctorProfile?.workingHoursStart || null;
     const workingHoursEnd = doctorProfile?.workingHoursEnd || null;
@@ -273,7 +363,40 @@ app.post('/api/appointments', async (req, res) => {
         status: "Pending" // Naya appointment default pending hota hai
       }
     });
-    res.status(201).json(newAppointment);
+
+    const [patient, doctorUser] = await Promise.all([
+      prisma.user.findUnique({
+        where: { id: patientId },
+        select: { fullName: true, expoPushToken: true },
+      }),
+      prisma.user.findUnique({
+        where: { id: doctorId },
+        select: { fullName: true, expoPushToken: true },
+      }),
+    ]);
+
+    let doctorNotificationSent = false;
+    try {
+      await sendAppointmentBookedNotifications({
+      appointmentId: newAppointment.id,
+      date,
+      time,
+      patient,
+      doctor: doctorUser,
+      sendToPatient: false,
+      sendToDoctor: true,
+      });
+      doctorNotificationSent = Boolean(doctorUser?.expoPushToken);
+    } catch (notificationError) {
+      console.error("Appointment notification error:", notificationError);
+    }
+
+    res.status(201).json({
+      ...newAppointment,
+      notification: {
+        doctorSent: doctorNotificationSent,
+      },
+    });
   } catch (error) {
     console.error("Appointment Error:", error);
     res.status(500).json({ error: 'Appointment save nahi ho saka' });
@@ -307,6 +430,53 @@ app.put('/api/appointments/:id/status', async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
   try {
+    if (status === 'Completed') {
+      const appointment = await prisma.appointment.findUnique({
+        where: { id },
+        select: { date: true, time: true, status: true },
+      });
+
+      if (!appointment) {
+        return res.status(404).json({ error: 'Appointment not found' });
+      }
+
+      const appointmentDateTime = getAppointmentDateTime(appointment.date, appointment.time);
+      if (!appointmentDateTime) {
+        return res.status(400).json({ error: 'Invalid appointment date or time' });
+      }
+
+      if (appointment.status === 'Cancelled' || appointment.status === 'Canceled') {
+        return res.status(409).json({ error: 'Cancelled appointment cannot be completed' });
+      }
+
+      if (Date.now() < appointmentDateTime.getTime()) {
+        return res.status(403).json({
+          error: 'Appointment can only be started at the scheduled time',
+        });
+      }
+    }
+
+    if (status === 'Cancelled') {
+      const appointment = await prisma.appointment.findUnique({
+        where: { id },
+        select: { createdAt: true, status: true },
+      });
+
+      if (!appointment) {
+        return res.status(404).json({ error: 'Appointment not found' });
+      }
+
+      if (appointment.status === 'Completed') {
+        return res.status(409).json({ error: 'Completed appointment cannot be cancelled' });
+      }
+
+      if (!isWithinCancelWindow(appointment.createdAt, CANCEL_WINDOW_MINUTES)) {
+        return res.status(403).json({
+          error: 'Appointment can only be cancelled within 15 minutes of booking',
+        });
+      }
+    }
+
     const updatedAppointment = await prisma.appointment.update({
       where: { id },
       data: { status }

@@ -1,14 +1,17 @@
-import { View, Text, FlatList, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, Text, FlatList, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useContext, useMemo, useState, useEffect } from 'react';
 import { UserContext } from '../../store/context/UserContext';
 import { Ionicons } from '@expo/vector-icons';
+import { canStartAppointment, getMinutesUntilAppointmentStart } from '../../utils/reminderUtils';
+import { registerAndSyncPushTokenForUser } from '../../utils/notificationUtils';
 
 const BACKEND_URL = "https://mediassist-rho.vercel.app";
 
 function AppointmentSedula({ navigation }) {
   const { user } = useContext(UserContext); // Removed appointments from context
   const [dbAppointments, setDbAppointments] = useState([]);
+  const [, setTimeTick] = useState(Date.now());
 
   // Fetch appointments for this doctor
   useEffect(() => {
@@ -27,6 +30,11 @@ function AppointmentSedula({ navigation }) {
     // Add navigation listener to refresh on focus if navigation prop is available
     if (navigation) {
       const unsubscribe = navigation.addListener('focus', () => {
+        if (user?.firebaseId) {
+          registerAndSyncPushTokenForUser(user.firebaseId).catch((error) => {
+            console.error('Doctor schedule token sync failed:', error);
+          });
+        }
         fetchAppointments();
       });
       return unsubscribe;
@@ -34,6 +42,14 @@ function AppointmentSedula({ navigation }) {
       fetchAppointments();
     }
   }, [navigation, user.id]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTimeTick(Date.now());
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Get today's date in YYYY-MM-DD format
   const todayDate = new Date().toISOString().split('T')[0];
@@ -65,49 +81,84 @@ function AppointmentSedula({ navigation }) {
         setDbAppointments(prev => prev.map(app => 
           app.id === appointmentId ? { ...app, status: "Completed" } : app
         ));
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        Alert.alert(
+          "Cannot Start",
+          errorData?.error || "Appointment can only be started at the scheduled time."
+        );
       }
     } catch (error) {
       console.error("Error updating status:", error);
+      Alert.alert("Error", "Failed to update appointment status.");
     }
   };
 
-  const renderAppointmentCard = ({ item }) => (
-    <View style={[styles.card, item.status === "Completed" && styles.completedCard]}>
-      <View style={[styles.timeTag, item.status === "Completed" && styles.completedTimeTag]}>
-        <Ionicons name="time-outline" size={16} color="#fff" />
-        <Text style={styles.timeTagText}>{item.time}</Text>
-      </View>
+  const renderAppointmentCard = ({ item }) => {
+    const canStartNow = canStartAppointment(item.date, item.time);
+    const minutesUntilStart = getMinutesUntilAppointmentStart(item.date, item.time);
 
-      <View style={styles.cardContent}>
-        <View style={styles.patientRow}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{item.patient?.fullName?.charAt(0) || 'P'}</Text>
-          </View>
-          <View style={styles.patientInfo}>
-            <Text style={[styles.patientName, item.status === "Completed" && styles.strikethroughText]}>
-              {item.patient?.fullName || "Unknown Patient"}
-            </Text>
-            <Text style={styles.patientSub}>Status: {item.status}</Text>
-          </View>
-          <View style={[styles.statusBadge, item.status === "Completed" && { backgroundColor: "#e8f5e9" }]}>
-            <Text style={[styles.statusText, item.status === "Completed" && { color: "#2e7d32" }]}>{item.status}</Text>
-          </View>
+    return (
+      <View
+        style={[
+          styles.card,
+          item.status === "Completed" && styles.completedCard,
+          item.status === "Cancelled" && styles.cancelledCard,
+        ]}
+      >
+        <View
+          style={[
+            styles.timeTag,
+            item.status === "Completed" && styles.completedTimeTag,
+            item.status === "Cancelled" && styles.cancelledTimeTag,
+          ]}
+        >
+          <Ionicons name="time-outline" size={16} color="#fff" />
+          <Text style={styles.timeTagText}>{item.time}</Text>
         </View>
 
-        <View style={styles.footer}>
-          <View style={styles.infoPill}>
-            <Ionicons name="calendar-outline" size={14} color="#180991" />
-            <Text style={styles.pillText}>{item.date}</Text>
+        <View style={styles.cardContent}>
+          <View style={styles.patientRow}>
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>{item.patient?.fullName?.charAt(0) || 'P'}</Text>
+            </View>
+            <View style={styles.patientInfo}>
+              <Text style={[styles.patientName, item.status === "Completed" && styles.strikethroughText]}>
+                {item.patient?.fullName || "Unknown Patient"}
+              </Text>
+              <Text style={styles.patientSub}>Status: {item.status}</Text>
+            </View>
+            <View style={[styles.statusBadge, item.status === "Completed" && { backgroundColor: "#e8f5e9" }]}>
+              <Text style={[styles.statusText, item.status === "Completed" && { color: "#2e7d32" }]}>{item.status}</Text>
+            </View>
           </View>
-          {item.status !== "Completed" && (
-            <Pressable style={styles.viewBtn} onPress={() => handleMarkDone(item.id)}>
-              <Text style={styles.viewBtnText}>Mark as Done</Text>
-            </Pressable>
-          )}
+
+          <View style={styles.footer}>
+            <View style={styles.infoPill}>
+              <Ionicons name="calendar-outline" size={14} color="#180991" />
+              <Text style={styles.pillText}>{item.date}</Text>
+            </View>
+            {item.status !== "Completed" && item.status !== "Cancelled" && item.status !== "Canceled" && (
+              <View style={styles.startActionWrap}>
+                {!canStartNow && (
+                  <Text style={styles.lockHint}>
+                    Starts in {minutesUntilStart} min{minutesUntilStart === 1 ? '' : 's'}
+                  </Text>
+                )}
+                <Pressable
+                  style={[styles.viewBtn, !canStartNow && styles.viewBtnDisabled]}
+                  onPress={() => handleMarkDone(item.id)}
+                  disabled={!canStartNow}
+                >
+                  <Text style={styles.viewBtnText}>Mark as Done</Text>
+                </Pressable>
+              </View>
+            )}
+          </View>
         </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <SafeAreaView edges={['left', 'right', 'bottom']} style={styles.container}>
@@ -273,6 +324,9 @@ const styles = StyleSheet.create({
     borderTopColor: '#f0f0f0',
     paddingTop: 12,
   },
+  startActionWrap: {
+    alignItems: 'flex-end',
+  },
   infoPill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -287,11 +341,20 @@ const styles = StyleSheet.create({
     color: '#180991',
     fontWeight: '600',
   },
+  lockHint: {
+    fontSize: 12,
+    color: '#8a4b00',
+    fontWeight: '600',
+    marginBottom: 6,
+  },
   viewBtn: {
     backgroundColor: '#180991',
     paddingHorizontal: 15,
     paddingVertical: 8,
     borderRadius: 10,
+  },
+  viewBtnDisabled: {
+    backgroundColor: '#b8bfdc',
   },
   viewBtnText: {
     color: '#fff',
@@ -326,6 +389,12 @@ const styles = StyleSheet.create({
   },
   completedTimeTag: {
     backgroundColor: '#888',
+  },
+  cancelledCard: {
+    opacity: 0.8,
+  },
+  cancelledTimeTag: {
+    backgroundColor: '#d32f2f',
   },
   strikethroughText: {
     textDecorationLine: 'line-through',

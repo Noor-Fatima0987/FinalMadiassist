@@ -19,9 +19,63 @@ import { formatTo12Hour } from '../../utils/reminderUtils';
 
 const BACKEND_URL = "https://mediassist-rho.vercel.app";
 
+const createEmptyMedication = () => ({
+  name: '',
+  dosage: '',
+  type: '',
+  frequency: [],
+  duration: '',
+  times: [],
+});
+
+const frequencyOptions = [
+  { label: 'Morning', value: 'Morning', time: '08:00' },
+  { label: 'Afternoon', value: 'Afternoon', time: '14:00' },
+  { label: 'Evening', value: 'Evening', time: '18:00' },
+  { label: 'Before Breakfast', value: 'Before Breakfast', time: '07:00' },
+  { label: 'After Breakfast', value: 'After Breakfast', time: '09:00' },
+  { label: 'After Dinner', value: 'After Dinner', time: '21:00' },
+];
+
+const frequencyPresetMap = frequencyOptions.reduce((acc, option) => {
+  acc[option.value] = option.time;
+  return acc;
+}, {});
+
+const getFrequencyLabel = (value) => {
+  const match = frequencyOptions.find((item) => item.value === value);
+  return match?.label || value;
+};
+
+const getTimeParts = (timeStr = '00:00') => {
+  const cleanTime = (timeStr || '00:00').replace(/[^0-9:]/g, '');
+  const [hoursStr, minutesStr] = cleanTime.split(':');
+  const hours = parseInt(hoursStr || '0', 10);
+  const minutes = parseInt(minutesStr || '0', 10);
+  const period = hours >= 12 ? 'PM' : 'AM';
+  const hours12 = hours % 12 || 12;
+
+  return { hours, minutes, period, hours12 };
+};
+
+const to24HourTime = (hours, minutes) => {
+  const safeHours = Number.isFinite(hours) ? hours : 0;
+  const safeMinutes = Number.isFinite(minutes) ? minutes : 0;
+  return `${safeHours.toString().padStart(2, '0')}:${safeMinutes.toString().padStart(2, '0')}`;
+};
+
+const setTimePeriod = (timeStr, targetPeriod) => {
+  const { hours12, minutes } = getTimeParts(timeStr);
+  const hours24 = targetPeriod === 'PM'
+    ? (hours12 === 12 ? 12 : hours12 + 12)
+    : (hours12 === 12 ? 0 : hours12);
+
+  return to24HourTime(hours24, minutes);
+};
+
 const AddPrescriptionScreen = ({ navigation, route }) => {
   const { user } = useContext(UserContext);
-  const { patientName } = route.params || {};
+  const { patientName, patientId, appointmentId } = route.params || {};
 
   const [doctorPatients, setDoctorPatients] = useState([]);
   const [selectedPatient, setSelectedPatient] = useState('__placeholder__');
@@ -58,36 +112,23 @@ const AddPrescriptionScreen = ({ navigation, route }) => {
   }, [user.id]);
 
   React.useEffect(() => {
+    if (patientId) {
+      setSelectedPatient(String(patientId));
+      return;
+    }
+
     if (patientName) {
       const match = doctorPatients.find(p => p.fullName === patientName);
       if (match) setSelectedPatient(String(match.id));
     }
-  }, [patientName, doctorPatients]);
+  }, [patientId, patientName, doctorPatients]);
 
-  const [medications, setMedications] = useState([
-    {
-      name: '',
-      dosage: '',
-      type: '',
-      frequency: '',
-      instructions: '',
-      duration: '',
-      times: [],
-    }
-  ]);
+  const [medications, setMedications] = useState([createEmptyMedication()]);
 
   const addMedicationField = () => {
     setMedications([
       ...medications,
-      {
-        name: '',
-        dosage: '',
-        type: '',
-        frequency: '',
-        instructions: '',
-        duration: '',
-        times: [],
-      }
+      createEmptyMedication()
     ]);
   };
 
@@ -102,27 +143,33 @@ const AddPrescriptionScreen = ({ navigation, route }) => {
 
     // Auto-calculate times array if frequency changes
     if (field === 'frequency') {
-      let suggestedTimes = [];
-      if (value === '1x a day') suggestedTimes = ['09:00'];
-      else if (value === '2x a day') suggestedTimes = ['09:00', '21:00'];
-      else if (value === '3x a day') suggestedTimes = ['08:00', '14:00', '20:00'];
-      else if (value === '4x a day') suggestedTimes = ['08:00', '12:00', '16:00', '20:00'];
-      
+      const selectedFrequencies = Array.isArray(value) ? value : [];
+      const suggestedTimes = selectedFrequencies
+        .map((frequency) => frequencyPresetMap[frequency])
+        .filter(Boolean);
       newMedications[index]['times'] = suggestedTimes;
     }
 
     setMedications(newMedications);
   };
 
+  const toggleFrequencyOption = (medIndex, frequencyValue) => {
+    const current = Array.isArray(medications[medIndex]?.frequency) ? medications[medIndex].frequency : [];
+    const next = current.includes(frequencyValue)
+      ? current.filter((item) => item !== frequencyValue)
+      : [...current, frequencyValue];
+    const ordered = frequencyOptions
+      .map((option) => option.value)
+      .filter((value) => next.includes(value));
+    updateMedication(medIndex, 'frequency', ordered);
+  };
+
   const handleOpenPicker = (medIndex, timeIndex, timeStr) => {
-    const cleanTime = (timeStr || "00:00").replace(/[^0-9:]/g, "");
-    const [hhStr, mmStr] = cleanTime.split(':');
-    const hh = parseInt(hhStr || "0", 10);
-    const mm = parseInt(mmStr || "0", 10);
+    const { hours, minutes } = getTimeParts(timeStr);
 
     const d = new Date();
-    d.setHours(hh);
-    d.setMinutes(mm);
+    d.setHours(hours);
+    d.setMinutes(minutes);
     setPickerTarget({ medIndex, timeIndex, value: d });
     setShowTimePicker(true);
   };
@@ -148,7 +195,7 @@ const AddPrescriptionScreen = ({ navigation, route }) => {
     }
 
     const hasEmptyFields = medications.some(
-      med => !med.name || !med.dosage || !med.type || !med.frequency || !med.instructions || !med.duration || !med.times || med.times.length === 0
+      med => !med.name || !med.dosage || !med.type || !Array.isArray(med.frequency) || med.frequency.length === 0 || !med.duration || !med.times || med.times.length === 0
     );
 
     if (hasEmptyFields) {
@@ -161,13 +208,12 @@ const AddPrescriptionScreen = ({ navigation, route }) => {
   };
 
   const handleSavePrescription = async () => {
-    setShowReminderModal(false);
     setIsLoading(true);
 
     const formattedMedications = medications.map(med => ({
       name: med.name,
-      dosage: `${med.dosage} (${med.type}) - ${med.frequency}`,
-      instructions: med.instructions,
+      dosage: `${med.dosage} (${med.type}) - ${(med.frequency || []).map(getFrequencyLabel).join(', ')}`,
+      instructions: '',
       duration: med.duration,
       times: med.times // Already an array of strings!
     }));
@@ -185,8 +231,13 @@ const AddPrescriptionScreen = ({ navigation, route }) => {
       });
 
       if (response.ok) {
+        setShowReminderModal(false);
+        setSelectedPatient('__placeholder__');
+        setMedications([createEmptyMedication()]);
+        setPickerTarget({ medIndex: 0, timeIndex: 0, value: new Date() });
+        setShowTimePicker(false);
         Alert.alert('Success', 'Prescription added successfully', [
-          { text: 'OK', onPress: () => navigation.navigate("Home") }
+          { text: 'OK', onPress: () => navigation.navigate('schedule') }
         ]);
       } else {
         Alert.alert('Error', 'Failed to save prescription.');
@@ -277,6 +328,7 @@ const AddPrescriptionScreen = ({ navigation, route }) => {
                       selectedValue={med.type}
                       onValueChange={(val) => updateMedication(index, 'type', val)}
                       style={styles.pickerSmall}
+                      itemStyle={styles.pickerItemSmall}
                     >
                       <Picker.Item label="Select..." value="" />
                       <Picker.Item label="Tablet" value="Tablet" />
@@ -289,24 +341,27 @@ const AddPrescriptionScreen = ({ navigation, route }) => {
                 </View>
               </View>
 
-              <View style={styles.row}>
-                <View style={[styles.inputGroup, { flex: 1, marginRight: 10 }]}>
-                  <Text style={styles.inputLabel}>Frequency <Text style={{color:'red'}}>*</Text></Text>
-                  <View style={styles.pickerContainerSmall}>
-                    <Picker
-                      selectedValue={med.frequency}
-                      onValueChange={(val) => updateMedication(index, 'frequency', val)}
-                      style={styles.pickerSmall}
-                    >
-                      <Picker.Item label="Select..." value="" />
-                      <Picker.Item label="1x a day" value="1x a day" />
-                      <Picker.Item label="2x a day" value="2x a day" />
-                      <Picker.Item label="3x a day" value="3x a day" />
-                      <Picker.Item label="4x a day" value="4x a day" />
-                    </Picker>
-                  </View>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Frequency <Text style={{color:'red'}}>*</Text></Text>
+                <View style={styles.frequencyOptionsWrap}>
+                  {frequencyOptions.map((option) => {
+                    const selected = Array.isArray(med.frequency) && med.frequency.includes(option.value);
+                    return (
+                      <Pressable
+                        key={option.value}
+                        style={[styles.frequencyChip, selected && styles.frequencyChipActive]}
+                        onPress={() => toggleFrequencyOption(index, option.value)}
+                      >
+                        <Text style={[styles.frequencyChipText, selected && styles.frequencyChipTextActive]}>
+                          {option.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
                 </View>
+              </View>
 
+              <View style={styles.row}>
                 <View style={[styles.inputGroup, { flex: 1 }]}>
                   <Text style={styles.inputLabel}>Duration <Text style={{color:'red'}}>*</Text></Text>
                   <View style={styles.pickerContainerSmall}>
@@ -314,8 +369,11 @@ const AddPrescriptionScreen = ({ navigation, route }) => {
                       selectedValue={med.duration}
                       onValueChange={(val) => updateMedication(index, 'duration', val)}
                       style={styles.pickerSmall}
+                      itemStyle={styles.pickerItemSmall}
                     >
                       <Picker.Item label="Select..." value="" />
+                      <Picker.Item label="1 Days" value="1 Days" />
+                      <Picker.Item label="2 Days" value="2 Days" />
                       <Picker.Item label="3 Days" value="3 Days" />
                       <Picker.Item label="5 Days" value="5 Days" />
                       <Picker.Item label="1 Week" value="1 Week" />
@@ -327,21 +385,6 @@ const AddPrescriptionScreen = ({ navigation, route }) => {
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Instructions <Text style={{color:'red'}}>*</Text></Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g., After meal, empty stomach"
-                  value={med.instructions}
-                  onChangeText={(text) => updateMedication(index, 'instructions', text)}
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <View style={styles.timeInfoBox}>
-                  <Ionicons name="alarm-outline" size={24} color="#0288d1" />
-                  <Text style={styles.timeInfoText}>Times are generated based on frequency. Tap on any time to manually adjust it with a clock picker.</Text>
-                </View>
-
                 {Array.isArray(med.times) && med.times.length > 0 ? (
                   <View style={styles.timeSlotsWrapper}>
                     {med.times.map((t, tIndex) => (
@@ -351,8 +394,43 @@ const AddPrescriptionScreen = ({ navigation, route }) => {
                         onPress={() => handleOpenPicker(index, tIndex, t)}
                       >
                         <View style={styles.timeSlotHeader}>
-                          <Text style={styles.timeSlotLabel}>Dose {tIndex + 1}</Text>
-                          <Ionicons name="create-outline" size={16} color="#4C39DB" />
+                          <View style={styles.timeSlotHeaderTop}>
+                            <Text style={styles.timeSlotLabel}>Dose {tIndex + 1}</Text>
+                          </View>
+                          <View style={styles.periodRow}>
+                            <Pressable
+                              style={[
+                                styles.periodToggle,
+                                getTimeParts(t).period === 'AM' && styles.periodToggleActive,
+                              ]}
+                              onPress={() => {
+                                const newTimes = [...med.times];
+                                newTimes[tIndex] = setTimePeriod(t, 'AM');
+                                updateMedication(index, 'times', newTimes);
+                              }}
+                            >
+                              <Text style={[
+                                styles.periodToggleText,
+                                getTimeParts(t).period === 'AM' && styles.periodToggleTextActive,
+                              ]}>AM</Text>
+                            </Pressable>
+                            <Pressable
+                              style={[
+                                styles.periodToggle,
+                                getTimeParts(t).period === 'PM' && styles.periodToggleActive,
+                              ]}
+                              onPress={() => {
+                                const newTimes = [...med.times];
+                                newTimes[tIndex] = setTimePeriod(t, 'PM');
+                                updateMedication(index, 'times', newTimes);
+                              }}
+                            >
+                              <Text style={[
+                                styles.periodToggleText,
+                                getTimeParts(t).period === 'PM' && styles.periodToggleTextActive,
+                              ]}>PM</Text>
+                            </Pressable>
+                          </View>
                         </View>
                         <Text style={styles.timeSlotValue}>{formatTo12Hour(t)}</Text>
                       </Pressable>
@@ -383,6 +461,7 @@ const AddPrescriptionScreen = ({ navigation, route }) => {
           value={pickerTarget.value}
           mode="time"
           display="default"
+          is24Hour={false}
           onChange={onTimeChange}
         />
       )}
@@ -410,7 +489,7 @@ const AddPrescriptionScreen = ({ navigation, route }) => {
               {medications.map((med, index) => (
                 <View key={index} style={styles.modalMedCard}>
                   <Text style={styles.modalMedName}>{med.name} <Text style={{fontSize: 14, fontWeight: 'normal', color: '#666'}}>({med.duration})</Text></Text>
-                  <Text style={styles.modalMedInstruction}>{med.instructions}</Text>
+                  <Text style={styles.modalMedInstruction}>{med.type} | {(med.frequency || []).map(getFrequencyLabel).join(', ')}</Text>
                   <View style={styles.modalTimesRow}>
                     {med.times.map((t, idx) => (
                       <View key={idx} style={styles.modalTimeChip}>
@@ -583,26 +662,69 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e0e0e0',
     overflow: 'hidden',
-    height: 48,
+    height: 52,
     justifyContent: 'center',
   },
   pickerSmall: {
-    height: 48,
+    height: 52,
   },
-  timeInfoBox: {
+  pickerItemSmall: {
+    fontSize: 13,
+  },
+  frequencyOptionsWrap: {
     flexDirection: 'row',
-    backgroundColor: '#e1f5fe',
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 12,
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  frequencyChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#cfd8dc',
+    backgroundColor: '#fff',
+  },
+  frequencyChipActive: {
+    backgroundColor: '#180991',
+    borderColor: '#180991',
+  },
+  frequencyChipText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#546e7a',
+  },
+  frequencyChipTextActive: {
+    color: '#fff',
+  },
+  periodRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-start',
+    marginTop: 4,
+  },
+  periodToggle: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#cfd8dc',
+    backgroundColor: '#fff',
+    marginLeft: 6,
+    minWidth: 38,
     alignItems: 'center',
   },
-  timeInfoText: {
-    flex: 1,
-    fontSize: 12,
-    color: '#0277bd',
-    marginLeft: 8,
-    lineHeight: 16,
+  periodToggleActive: {
+    backgroundColor: '#180991',
+    borderColor: '#180991',
+  },
+  periodToggleText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#546e7a',
+  },
+  periodToggleTextActive: {
+    color: '#fff',
   },
   timeSlotsWrapper: {
     flexDirection: 'row',
@@ -613,17 +735,21 @@ const styles = StyleSheet.create({
   timeSlotBtn: {
     backgroundColor: '#f0f4f8',
     borderRadius: 12,
-    padding: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
     minWidth: '45%',
     flex: 1,
     borderWidth: 1,
     borderColor: '#d0d9e4',
   },
   timeSlotHeader: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  timeSlotHeaderTop: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
   },
   timeSlotLabel: {
     fontSize: 12,
@@ -634,6 +760,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#180991',
+    marginTop: 2,
   },
   emptyTimesText: {
     color: '#999',

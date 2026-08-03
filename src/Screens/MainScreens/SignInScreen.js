@@ -7,6 +7,7 @@ import SignUpLink from "../../Components/SigiUpComponent/SignInLink";
 import { auth } from "../../firebase/firebaseConfig";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { UserContext } from "../../store/context/UserContext";
+import { registerAndSyncPushTokenForUser } from "../../utils/notificationUtils";
 import { moderateScale, platformFont } from "../../utils/responsive";
 
 const BACKEND_URL = "https://mediassist-rho.vercel.app"; // Localtunnel URL
@@ -17,12 +18,15 @@ export default function SignInScreen({ navigation }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState({});
+  const [isSigningIn, setIsSigningIn] = useState(false);
 
   function SignUpHandler() {
     navigation.navigate("Sign Up");
   }
 
   const handleLogin = async () => {
+    if (isSigningIn) return;
+
     const newErrors = {};
 
     if (!email.trim()) newErrors.email = "Email is required";
@@ -32,6 +36,7 @@ export default function SignInScreen({ navigation }) {
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length === 0) {
+      setIsSigningIn(true);
       try {
         // 1. Firebase Login
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -43,6 +48,7 @@ export default function SignInScreen({ navigation }) {
 
         if (response.ok) {
           saveUser(result);
+          await registerAndSyncPushTokenForUser(result.firebaseId);
           // Conditional rendering in Navigation.js handles the screen switch automatically.
         } else {
           alert("Error: " + result.error);
@@ -51,6 +57,8 @@ export default function SignInScreen({ navigation }) {
       } catch (error) {
         console.error(error);
         alert("Login Error: " + error.message);
+      } finally {
+        setIsSigningIn(false);
       }
     }
   };
@@ -80,7 +88,7 @@ export default function SignInScreen({ navigation }) {
           ListFooterComponent={
             <>
               <SignUpLink navigation={navigation} onPress={SignUpHandler} />
-              <SubmitButton title="Sign In" onPress={handleLogin} />
+              <SubmitButton title="Sign In" onPress={handleLogin} isLoading={isSigningIn} />
             </>
           }
         />
