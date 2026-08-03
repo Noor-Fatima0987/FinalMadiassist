@@ -1,9 +1,12 @@
 import React, { useContext, useMemo, useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, AppState } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { UserContext } from '../../store/context/UserContext';
 import { Ionicons } from '@expo/vector-icons';
 import { getAppointmentDateTime, canStartAppointment, getMinutesUntilAppointmentStart } from '../../utils/reminderUtils';
+import * as Notifications from 'expo-notifications';
+import notifee, { AndroidImportance } from '@notifee/react-native';
+import { Alert } from 'react-native';
 import { registerAndSyncPushTokenForUser } from '../../utils/notificationUtils';
 
 const BACKEND_URL = "https://mediassist-rho.vercel.app";
@@ -12,25 +15,69 @@ const HomeDoctorScreen = ({ navigation }) => {
   const { user } = useContext(UserContext); // Removed appointments from context
   const [dbAppointments, setDbAppointments] = useState([]);
   const [, setTimeTick] = useState(Date.now());
+  const knownApptIdsRef = React.useRef(null);
 
-  // Fetch appointments for this doctor
-  useEffect(() => {
-    const fetchAppointments = async () => {
-      try {
-        const response = await fetch(`${BACKEND_URL}/api/appointments/${user.id}`);
-        const data = await response.json();
-        if (response.ok) {
-          if (Array.isArray(data)) {
-            setDbAppointments(data);
-          } else {
-            setDbAppointments([]);
+  const fetchAppointments = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/appointments/${user.id}`);
+      const data = await response.json();
+      if (response.ok && Array.isArray(data)) {
+        setDbAppointments(data);
+
+        // Detect new appointments and trigger local notification + alert
+        if (knownApptIdsRef.current === null) {
+          knownApptIdsRef.current = new Set(data.map((item) => item.id));
+        } else {
+          const newAppointments = data.filter((item) => !knownApptIdsRef.current.has(item.id));
+          if (newAppointments.length > 0) {
+            newAppointments.forEach((newAppt) => {
+              knownApptIdsRef.current.add(newAppt.id);
+              const patientName = newAppt.patient?.fullName || newAppt.patientName || 'A patient';
+              const dateStr = newAppt.date || '';
+              const timeStr = newAppt.time || '';
+
+              // Use notifee so notification works when phone is locked / app is backgrounded
+              (async () => {
+                try {
+                  const channelId = await notifee.createChannel({
+                    id: 'appointment-alerts',
+                    name: 'Appointment Alerts',
+                    importance: AndroidImportance.HIGH,
+                    sound: 'default',
+                  });
+                  await notifee.displayNotification({
+                    title: 'New Appointment Booked',
+                    body: `${patientName} has booked an appointment for ${dateStr} at ${timeStr}.`,
+                    android: {
+                      channelId,
+                      importance: AndroidImportance.HIGH,
+                      pressAction: { id: 'default' },
+                      smallIcon: 'ic_notification',
+                    },
+                    data: { type: 'new-appointment', appointmentId: newAppt.id },
+                  });
+                } catch (e) {
+                  Notifications.scheduleNotificationAsync({
+                    content: {
+                      title: 'New Appointment Booked',
+                      body: `${patientName} has booked an appointment for ${dateStr} at ${timeStr}.`,
+                      sound: 'default',
+                    },
+                    trigger: null,
+                  }).catch(() => {});
+                }
+              })();
+            });
           }
         }
-      } catch (error) {
-        console.error("Error fetching doctor appointments:", error);
       }
-    };
-    
+    } catch (error) {
+      console.error("Error fetching doctor appointments:", error);
+    }
+  };
+
+  // Fetch appointments for this doctor & listen for push notifications
+  useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
       if (user?.firebaseId) {
         registerAndSyncPushTokenForUser(user.firebaseId).catch((error) => {
@@ -39,11 +86,35 @@ const HomeDoctorScreen = ({ navigation }) => {
       }
       fetchAppointments();
     });
+
+    const notifSubscription = Notifications.addNotificationReceivedListener((notification) => {
+      const data = notification?.request?.content?.data || {};
+      if (data.type === 'new-appointment' || data.recipientRole === 'DOCTOR') {
+        fetchAppointments();
+      }
+    });
     
     // Initial fetch
     fetchAppointments();
 
-    return unsubscribe;
+    // 4-second realtime polling fallback so doctor gets notification within 4 seconds of patient booking
+    const pollInterval = setInterval(() => {
+      fetchAppointments();
+    }, 4000);
+
+    // AppState listener: check immediately when app comes back from background/locked
+    const appStateSub = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        fetchAppointments();
+      }
+    });
+
+    return () => {
+      unsubscribe();
+      notifSubscription.remove();
+      appStateSub.remove();
+      clearInterval(pollInterval);
+    };
   }, [navigation, user.id]);
 
   useEffect(() => {
@@ -86,7 +157,7 @@ const HomeDoctorScreen = ({ navigation }) => {
     : 0;
 
   return (
-    <SafeAreaView edges={['left', 'right', 'bottom']} style={styles.container}>
+    <SafeAreaView edges={['left', 'right']} style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
 
         {/* Header Section */}

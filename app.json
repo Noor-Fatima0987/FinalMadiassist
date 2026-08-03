@@ -17,6 +17,7 @@
       "bundleIdentifier": "com.noorfatima.finalMadiAssist"
     },
     "android": {
+      "googleServicesFile": "./android/app/google-services.json",
       "edgeToEdgeEnabled": true,
       "package": "com.noorfatima.finalMadiAssist",
       "permissions": [

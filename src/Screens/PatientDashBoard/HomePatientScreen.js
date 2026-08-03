@@ -1,11 +1,17 @@
-﻿import React, { useContext, useMemo, useState } from "react";
-import { View, Text, ScrollView, StyleSheet, TextInput, Pressable } from "react-native";
+import React, { useContext, useMemo, useState, useRef } from "react";
+import { View, Text, ScrollView, StyleSheet, TextInput, Pressable, AppState } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { UserContext } from "../../store/context/UserContext";
 import AppointmentCard from "../../Components/PatientComponent/AppointmentCard";
 import QuickActionButton from "../../Components/PatientComponent/QuickActionButton";
 import MedicationCard from "../../Components/PatientComponent/MedicationCard";
+import * as Notifications from "expo-notifications";
+import notifee, { AndroidImportance } from "@notifee/react-native";
+import { registerAndSyncPushTokenForUser, syncPatientMedicationNotifications } from "../../utils/notificationUtils";
+
+const globalKnownPrescriptionIds = new Set();
+let globalIsFirstFetchDone = false;
 
 const HomePatientScreen = ({ navigation }) => {
   const { user } = useContext(UserContext); // Removed prescriptions from context
@@ -22,16 +28,101 @@ const HomePatientScreen = ({ navigation }) => {
         if (appRes.ok) setDbAppointments(await appRes.json());
 
         const presRes = await fetch(`${BACKEND_URL}/api/prescriptions/patient/${user.id}`);
-        if (presRes.ok) setDbPrescriptions(await presRes.json());
+        if (presRes.ok) {
+          const presData = await presRes.json();
+          if (Array.isArray(presData)) {
+            setDbPrescriptions(presData);
+
+            if (!globalIsFirstFetchDone) {
+              presData.forEach((p) => globalKnownPrescriptionIds.add(p.id));
+              globalIsFirstFetchDone = true;
+            } else {
+              const newPrescriptions = presData.filter((p) => !globalKnownPrescriptionIds.has(p.id));
+              if (newPrescriptions.length > 0) {
+                newPrescriptions.forEach((newPres) => {
+                  globalKnownPrescriptionIds.add(newPres.id);
+                  const doctorName = newPres.doctor?.fullName || newPres.doctorName || 'Your doctor';
+
+                  // Use notifee so notification works even when phone is locked / app is backgrounded
+                  (async () => {
+                    try {
+                      const channelId = await notifee.createChannel({
+                        id: 'prescription-alerts',
+                        name: 'Prescription Alerts',
+                        importance: AndroidImportance.HIGH,
+                        sound: 'default',
+                      });
+                      await notifee.displayNotification({
+                        title: 'New Prescription Added',
+                        body: `${doctorName} has added a new prescription for you.`,
+                        android: {
+                          channelId,
+                          importance: AndroidImportance.HIGH,
+                          pressAction: { id: 'default' },
+                          smallIcon: 'ic_notification',
+                        },
+                        data: { type: 'prescription-added', prescriptionId: newPres.id },
+                      });
+                    } catch (e) {
+                      // Fallback to expo notifications
+                      Notifications.scheduleNotificationAsync({
+                        content: {
+                          title: 'New Prescription Added',
+                          body: `${doctorName} has added a new prescription for you.`,
+                          sound: 'default',
+                        },
+                        trigger: null,
+                      }).catch(() => {});
+                    }
+                  })();
+                });
+
+                // Auto sync alarms for newly prescribed medications
+                syncPatientMedicationNotifications(user.id).catch(() => {});
+              }
+            }
+          }
+        }
       } catch (error) {
         console.error("Error fetching home data:", error);
       }
     };
-    // Fetch when screen comes into focus using navigation listener
+
+    fetchData();
+
     const unsubscribe = navigation.addListener('focus', () => {
+      if (user?.firebaseId) {
+        registerAndSyncPushTokenForUser(user.firebaseId).catch(() => {});
+      }
       fetchData();
     });
-    return unsubscribe;
+
+    const notifSub = Notifications.addNotificationReceivedListener((notification) => {
+      const data = notification?.request?.content?.data || {};
+      if (data.type === 'prescription-added') {
+        fetchData();
+        syncPatientMedicationNotifications(user.id).catch(() => {});
+      }
+    });
+
+    // AppState listener: fetch immediately when app comes to foreground from background/locked
+    const appStateSub = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        fetchData();
+      }
+    });
+
+    // 3-second realtime polling so patient gets notification when doctor saves prescription
+    const pollInterval = setInterval(() => {
+      fetchData();
+    }, 3000);
+
+    return () => {
+      unsubscribe();
+      notifSub.remove();
+      appStateSub.remove();
+      clearInterval(pollInterval);
+    };
   }, [navigation, user.id]);
 
   // Extract medications from patient's prescriptions
@@ -52,7 +143,7 @@ const HomePatientScreen = ({ navigation }) => {
 
 
   return (
-    <SafeAreaView edges={['left', 'right', 'bottom']} style={styles.container}>
+    <SafeAreaView edges={['left', 'right']} style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
 
         {/* --- Header --- */}

@@ -17,6 +17,9 @@ import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { formatTo12Hour } from '../../utils/reminderUtils';
 
+import * as Notifications from 'expo-notifications';
+import { sendExpoPushNotificationAsync } from '../../utils/notificationUtils';
+
 const BACKEND_URL = "https://mediassist-rho.vercel.app";
 
 const createEmptyMedication = () => ({
@@ -231,14 +234,56 @@ const AddPrescriptionScreen = ({ navigation, route }) => {
       });
 
       if (response.ok) {
+        const patientObj = (doctorPatients || []).find((p) => String(p.id) === String(selectedPatient));
+        const patientName = patientObj?.fullName || 'the patient';
+
+        // 1. Doctor System Notification (Clean English)
+        Notifications.scheduleNotificationAsync({
+          content: {
+            title: 'Prescription Added',
+            body: `Prescription for ${patientName} has been saved successfully.`,
+            sound: 'default',
+            data: { type: 'prescription-added' },
+          },
+          trigger: null,
+        }).catch(() => {});
+
+        // 2. Patient Remote Push Notification
+        try {
+          let patientPushToken = patientObj?.expoPushToken;
+          try {
+            const tokenRes = await fetch(`${BACKEND_URL}/api/user/${selectedPatient}/push-token`);
+            if (tokenRes.ok) {
+              const tokenData = await tokenRes.json();
+              if (tokenData?.expoPushToken) {
+                patientPushToken = tokenData.expoPushToken;
+              }
+            }
+          } catch (tErr) {}
+
+          if (patientPushToken) {
+            await sendExpoPushNotificationAsync({
+              to: patientPushToken,
+              title: 'New Prescription Added',
+              body: `Dr. ${user.fullName || 'Doctor'} has added a new prescription for you.`,
+              sound: 'default',
+              data: { type: 'prescription-added', patientId: selectedPatient },
+            }).catch((sendErr) => {
+              console.log('Push send status:', sendErr?.message);
+            });
+          }
+        } catch (pushErr) {
+          console.log('Patient push notification status:', pushErr?.message);
+        }
+
         setShowReminderModal(false);
         setSelectedPatient('__placeholder__');
         setMedications([createEmptyMedication()]);
         setPickerTarget({ medIndex: 0, timeIndex: 0, value: new Date() });
         setShowTimePicker(false);
-        Alert.alert('Success', 'Prescription added successfully', [
-          { text: 'OK', onPress: () => navigation.navigate('schedule') }
-        ]);
+
+        // Directly navigate to schedule without showing popup modal
+        navigation.navigate('schedule');
       } else {
         Alert.alert('Error', 'Failed to save prescription.');
       }
@@ -251,7 +296,7 @@ const AddPrescriptionScreen = ({ navigation, route }) => {
   };
 
   return (
-    <SafeAreaView edges={['left', 'right', 'bottom']} style={styles.container}>
+    <SafeAreaView edges={['left', 'right']} style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
           <Text style={styles.title}>New Prescription</Text>
@@ -798,6 +843,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     padding: 25,
+    paddingBottom: 40,
     maxHeight: '80%',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -5 },
