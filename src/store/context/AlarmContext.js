@@ -1,5 +1,6 @@
-import React, { createContext, useState, useRef } from 'react';
-import { Modal, View, Text, StyleSheet, Pressable, Vibration, Animated } from 'react-native';
+import React, { createContext, useEffect, useState, useRef } from 'react';
+import notifee, { EventType } from '@notifee/react-native';
+import { Modal, View, Text, StyleSheet, Pressable, Animated, Vibration } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 export const AlarmContext = createContext();
@@ -8,20 +9,24 @@ export const AlarmProvider = ({ children }) => {
   const [alarmVisible, setAlarmVisible] = useState(false);
   const [alarmData, setAlarmData] = useState(null);
   const shakeAnimation = useRef(new Animated.Value(0)).current;
-
-  // Pattern for vibration: Wait 0s, vibrate 500ms, wait 500ms, vibrate 500ms...
-  const VIBRATION_PATTERN = [0, 500, 500, 500, 500, 500, 500, 500, 500, 500];
+  const lastTriggeredKeyRef = useRef(null);
+  const triggerAlarmRef = useRef(null);
 
   const triggerAlarm = async (medicationDetails) => {
-    if (alarmVisible) return; // Prevent multiple overlapping alarms
+    const triggerKey = [
+      medicationDetails?.medicineName || 'medicine',
+      medicationDetails?.time || '',
+      medicationDetails?.dosage || '',
+    ].join('|');
+
+    if (alarmVisible || lastTriggeredKeyRef.current === triggerKey) return;
+    lastTriggeredKeyRef.current = triggerKey;
 
     setAlarmData(medicationDetails);
     setAlarmVisible(true);
+    Vibration.vibrate([0, 1000, 500, 1000], true);
 
-    // 1. Start Vibrate
-    Vibration.vibrate(VIBRATION_PATTERN, true); // true = repeat
-
-    // 2. Start Shake Animation
+    // Start shake animation to make the alarm feel urgent.
     Animated.loop(
       Animated.sequence([
         Animated.timing(shakeAnimation, { toValue: 10, duration: 100, useNativeDriver: true }),
@@ -33,12 +38,47 @@ export const AlarmProvider = ({ children }) => {
     ).start();
   };
 
+  triggerAlarmRef.current = triggerAlarm;
+
+  useEffect(() => {
+    const unsubscribeForeground = notifee.onForegroundEvent(({ type, detail }) => {
+      const data = detail?.notification?.data || {};
+      if (
+        (type === EventType.DELIVERED || type === EventType.PRESS || type === EventType.ACTION_PRESS) &&
+        (data.type === 'medication-reminder' || data.type === 'test-alarm')
+      ) {
+        triggerAlarmRef.current?.(data);
+      }
+    });
+
+    notifee.getInitialNotification().then((initialNotification) => {
+      const data = initialNotification?.notification?.data || {};
+      if (data.type === 'medication-reminder' || data.type === 'test-alarm') {
+        triggerAlarmRef.current?.(data);
+      }
+    });
+
+    return () => {
+      unsubscribeForeground();
+    };
+  }, []);
+
   const stopAlarm = () => {
-    Vibration.cancel();
     shakeAnimation.stopAnimation();
+    Vibration.cancel();
+    if (alarmData?.notificationId) {
+      notifee.cancelNotification(alarmData.notificationId).catch(() => {});
+    }
     setAlarmVisible(false);
     setAlarmData(null);
+    lastTriggeredKeyRef.current = null;
   };
+
+  useEffect(() => {
+    return () => {
+      Vibration.cancel();
+    };
+  }, []);
 
   return (
     <AlarmContext.Provider value={{ triggerAlarm, stopAlarm }}>
@@ -59,6 +99,7 @@ export const AlarmProvider = ({ children }) => {
             </Animated.View>
             <Text style={styles.alarmText}>TIME TO TAKE</Text>
             <Text style={styles.medName}>{alarmData?.medicineName || 'Your Medicine'}</Text>
+            <Text style={styles.timeText}>{alarmData?.time ? `At ${alarmData.time}` : ''}</Text>
           </View>
 
           <View style={styles.detailsCard}>
@@ -115,6 +156,12 @@ const styles = StyleSheet.create({
     fontSize: 40,
     fontWeight: '900',
     textAlign: 'center',
+  },
+  timeText: {
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: 18,
+    marginTop: 10,
+    fontWeight: '600',
   },
   detailsCard: {
     backgroundColor: '#fff',

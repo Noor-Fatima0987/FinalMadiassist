@@ -2,6 +2,37 @@
 /**
  * Gets all reminders for today sorted by time.
  */
+const normalizeTimeInput = (timeStr) => String(timeStr || "").trim().replace(/\s+/g, " ").replace(/(\d)(AM|PM)$/i, "$1 $2");
+
+export const parseFlexibleTimeToMinutes = (timeStr) => {
+    const normalized = normalizeTimeInput(timeStr);
+    if (!normalized) return null;
+
+    const match = normalized.match(/^(\d{1,2})(?::(\d{1,2}))?(?:\s*([AaPp][Mm]))?$/);
+    if (!match) return null;
+
+    let hours = parseInt(match[1], 10);
+    const minutes = parseInt(match[2] || "0", 10);
+    const period = match[3]?.toUpperCase();
+
+    if (Number.isNaN(hours) || Number.isNaN(minutes) || minutes < 0 || minutes > 59) {
+        return null;
+    }
+
+    if (period) {
+        if (hours < 1 || hours > 12) return null;
+        if (period === "AM") {
+            hours = hours === 12 ? 0 : hours;
+        } else {
+            hours = hours === 12 ? 12 : hours + 12;
+        }
+    } else if (hours > 23) {
+        return null;
+    }
+
+    return hours * 60 + minutes;
+};
+
 export const getTodaySchedule = (medications) => {
     const schedule = [];
     if (!Array.isArray(medications)) return schedule;
@@ -26,7 +57,15 @@ export const getTodaySchedule = (medications) => {
         });
     });
 
-    return schedule.sort((a, b) => a.time.localeCompare(b.time));
+    return schedule.sort((a, b) => {
+        const aMinutes = parseFlexibleTimeToMinutes(a.time);
+        const bMinutes = parseFlexibleTimeToMinutes(b.time);
+
+        if (aMinutes === null && bMinutes === null) return 0;
+        if (aMinutes === null) return 1;
+        if (bMinutes === null) return -1;
+        return aMinutes - bMinutes;
+    });
 };
 
 /**
@@ -40,11 +79,8 @@ export const getNextReminder = (medications) => {
 
     // Filter for upcoming ones today
     const upcoming = schedule.filter((item) => {
-        const timeStr = (item.time || "00:00").replace(/[^0-9:]/g, "");
-        const [hoursStr, minutesStr] = timeStr.split(":");
-        const hours = parseInt(hoursStr || "0", 10);
-        const minutes = parseInt(minutesStr || "0", 10);
-        const itemTotalMinutes = hours * 60 + minutes;
+        const itemTotalMinutes = parseFlexibleTimeToMinutes(item.time);
+        if (itemTotalMinutes === null) return false;
         return itemTotalMinutes > currentTotalMinutes;
     });
 
@@ -65,13 +101,11 @@ export const getNextReminder = (medications) => {
  */
 export const getMinutesUntil = (timeStr, isTomorrow = false) => {
     const now = new Date();
-    const cleanTime = (timeStr || "00:00").replace(/[^0-9:]/g, "");
-    const [hoursStr, minutesStr] = cleanTime.split(":");
-    const hours = parseInt(hoursStr || "0", 10);
-    const minutes = parseInt(minutesStr || "0", 10);
+    const totalMinutes = parseFlexibleTimeToMinutes(timeStr);
+    if (totalMinutes === null) return 0;
 
     const target = new Date();
-    target.setHours(hours, minutes, 0, 0);
+    target.setHours(Math.floor(totalMinutes / 60), totalMinutes % 60, 0, 0);
 
     if (isTomorrow) {
         target.setDate(target.getDate() + 1);
@@ -86,21 +120,88 @@ export const getMinutesUntil = (timeStr, isTomorrow = false) => {
  */
 export const convertTo24Hour = (timeStr) => {
     try {
-        const [time, modifier] = (timeStr || "").split(" ");
-        let [hours, minutes] = (time || "00:00").split(":");
+        const totalMinutes = parseFlexibleTimeToMinutes(timeStr);
+        if (totalMinutes === null) return "00:00";
 
-        if (hours === "12") {
-            hours = "00";
-        }
-
-        if (modifier === "PM" || modifier === "pm") {
-            hours = parseInt(hours, 10) + 12;
-        }
-
-        return `${hours.toString().padStart(2, '0')}:${minutes || "00"}`;
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
     } catch {
         return "00:00";
     }
+};
+
+/**
+ * Builds a local Date object for an appointment date/time pair.
+ */
+export const getAppointmentDateTime = (dateStr, timeStr) => {
+    if (!dateStr || !timeStr) return null;
+
+    try {
+        const [yearStr, monthStr, dayStr] = String(dateStr).split("-");
+        const [hoursStr, minutesStr] = convertTo24Hour(timeStr).split(":");
+
+        const year = parseInt(yearStr, 10);
+        const month = parseInt(monthStr, 10);
+        const day = parseInt(dayStr, 10);
+        const hours = parseInt(hoursStr, 10);
+        const minutes = parseInt(minutesStr, 10);
+
+        if ([year, month, day, hours, minutes].some(Number.isNaN)) {
+            return null;
+        }
+
+        return new Date(year, month - 1, day, hours, minutes, 0, 0);
+    } catch {
+        return null;
+    }
+};
+
+/**
+ * Returns whether doctor can start the appointment now.
+ */
+export const canStartAppointment = (dateStr, timeStr) => {
+    const appointmentDateTime = getAppointmentDateTime(dateStr, timeStr);
+    if (!appointmentDateTime) return false;
+    return Date.now() >= appointmentDateTime.getTime();
+};
+
+/**
+ * Returns minutes remaining until the appointment starts.
+ */
+export const getMinutesUntilAppointmentStart = (dateStr, timeStr) => {
+    const appointmentDateTime = getAppointmentDateTime(dateStr, timeStr);
+    if (!appointmentDateTime) return 0;
+
+    const diffMs = appointmentDateTime.getTime() - Date.now();
+    return Math.max(0, Math.ceil(diffMs / 60000));
+};
+
+/**
+ * Returns whether an appointment is still cancellable within the booking window.
+ */
+export const canCancelAppointment = (createdAt, windowMinutes = 15) => {
+    if (!createdAt) return false;
+
+    const createdDate = new Date(createdAt);
+    if (Number.isNaN(createdDate.getTime())) return false;
+
+    const expiry = new Date(createdDate.getTime() + windowMinutes * 60 * 1000);
+    return new Date() <= expiry;
+};
+
+/**
+ * Returns remaining minutes in the cancellation window.
+ */
+export const getCancelWindowMinutesLeft = (createdAt, windowMinutes = 15) => {
+    if (!createdAt) return 0;
+
+    const createdDate = new Date(createdAt);
+    if (Number.isNaN(createdDate.getTime())) return 0;
+
+    const expiry = new Date(createdDate.getTime() + windowMinutes * 60 * 1000);
+    const diffMs = expiry.getTime() - Date.now();
+    return Math.max(0, Math.ceil(diffMs / 60000));
 };
 
 /**
@@ -108,12 +209,11 @@ export const convertTo24Hour = (timeStr) => {
  */
 export const formatTo12Hour = (time24) => {
     try {
-        const cleanTime = (time24 || "00:00").replace(/[^0-9:]/g, "");
-        const [hoursStr, minutesStr] = cleanTime.split(":");
-        const hours = parseInt(hoursStr || "0", 10);
-        const minutes = parseInt(minutesStr || "0", 10);
-        
-        if (isNaN(hours) || isNaN(minutes)) return time24; // fallback to original
+        const totalMinutes = parseFlexibleTimeToMinutes(time24);
+        if (totalMinutes === null) return time24; // fallback to original
+
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
 
         const ampm = hours >= 12 ? "PM" : "AM";
         const hours12 = hours % 12 || 12;
@@ -151,11 +251,10 @@ export const getTimelineSchedule = (medications) => {
     let nextFound = false;
 
     return schedule.map((item) => {
-        const timeStr = (item.time || "00:00").replace(/[^0-9:]/g, "");
-        const [hoursStr, minutesStr] = timeStr.split(":");
-        const hours = parseInt(hoursStr || "0", 10);
-        const minutes = parseInt(minutesStr || "0", 10);
-        const itemTotalMinutes = hours * 60 + minutes;
+        const itemTotalMinutes = parseFlexibleTimeToMinutes(item.time);
+        if (itemTotalMinutes === null) {
+            return { ...item, status: 'future' };
+        }
 
         let status = 'future';
         if (itemTotalMinutes <= currentTotalMinutes) {
@@ -174,13 +273,11 @@ export const getTimelineSchedule = (medications) => {
  */
 export const getSecondsUntil = (timeStr, isTomorrow = false) => {
     const now = new Date();
-    const cleanTime = (timeStr || "00:00").replace(/[^0-9:]/g, "");
-    const [hoursStr, minutesStr] = cleanTime.split(":");
-    const hours = parseInt(hoursStr || "0", 10);
-    const minutes = parseInt(minutesStr || "0", 10);
+    const totalMinutes = parseFlexibleTimeToMinutes(timeStr);
+    if (totalMinutes === null) return 0;
 
     const target = new Date();
-    target.setHours(hours, minutes, 0, 0);
+    target.setHours(Math.floor(totalMinutes / 60), totalMinutes % 60, 0, 0);
 
     if (isTomorrow) {
         target.setDate(target.getDate() + 1);

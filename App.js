@@ -5,16 +5,12 @@ import { UserProvider } from './src/store/context/UserContext';
 import { AlarmProvider } from './src/store/context/AlarmContext';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
-import { registerForPushNotificationsAsync } from './src/utils/notificationUtils';
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
 
 export default function App() {
   useEffect(() => {
-    // Register for notifications on startup
-    registerForPushNotificationsAsync();
-
     // Hide the splash screen after a short delay or when app is ready
     const hideSplash = async () => {
       await new Promise(resolve => setTimeout(resolve, 2000)); // Delay to show logo

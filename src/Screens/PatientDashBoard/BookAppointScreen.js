@@ -15,6 +15,7 @@ import {
   parseLegacyAvailabilityLabel,
   parseWorkingDays,
 } from "../../utils/doctorAvailability";
+import { sendAppointmentConfirmationNotificationAsync, sendExpoPushNotificationAsync } from "../../utils/notificationUtils";
 
 const normalizeDoctorForBooking = (doc) => {
   if (!doc) return null;
@@ -133,11 +134,23 @@ const BookAppointmentScreen = ({ navigation }) => {
       const result = await response.json();
 
       if (response.ok) {
-        Alert.alert(
-          "Appointment Confirmed",
-          `Your appointment with ${doctor.fullName} on ${date} at ${time} is confirmed.`,
-          [{ text: "OK", onPress: () => navigation.navigate("Home") }]
-        );
+        if (doctor?.expoPushToken && result?.notification?.doctorSent !== true) {
+          await sendExpoPushNotificationAsync({
+            to: doctor.expoPushToken,
+            title: 'New Appointment',
+            body: `${user.fullName || 'A patient'} booked an appointment for ${date} at ${time}.`,
+            data: {
+              type: 'new-appointment',
+              appointmentId: result.id,
+              recipientRole: 'DOCTOR',
+            },
+          }).catch((pushError) => {
+            console.error('Fallback doctor push failed:', pushError);
+          });
+        }
+
+        await sendAppointmentConfirmationNotificationAsync(doctor.fullName, date, time);
+        navigation.navigate("Home");
       } else {
         Alert.alert("Error", result.error || "Failed to book appointment.");
       }

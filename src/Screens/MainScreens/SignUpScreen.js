@@ -8,6 +8,7 @@ import SignInLink from "../../Components/SigiUpComponent/SignInLink";
 import { auth } from "../../firebase/firebaseConfig";
 import { createUserWithEmailAndPassword, deleteUser } from "firebase/auth";
 import { UserContext } from "../../store/context/UserContext";
+import { registerAndSyncPushTokenForUser } from "../../utils/notificationUtils";
 import { moderateScale, platformFont } from "../../utils/responsive";
 import { parseTimeToMinutes } from "../../utils/doctorAvailability";
 
@@ -185,6 +186,7 @@ export default function SignUpScreen({ navigation }) {
         if (response.ok) {
           alert("Account Created Successfully!");
           saveUser(result);
+          await registerAndSyncPushTokenForUser(result.firebaseId);
         } else {
           // Database error rollback: Delete the Firebase Auth user if DB save fails
           if (firebaseUser) {
